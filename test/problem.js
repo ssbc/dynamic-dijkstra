@@ -2,6 +2,13 @@ var opts = require('../simple')
 var T = require('../')(opts)
 var tape = require('tape')
 
+var min = opts.min
+opts.min = function (a, b) {
+  if(min(a, b) !== min(b, a))
+    throw new Error('detected misorder: min('+a+', '+b+')')
+  return min(a, b)
+}
+
 var g = {
   C: { E: -1 },
   A: { E: 1 },
@@ -77,24 +84,27 @@ tape('order', function (t) {
 
 tape('order2', function (t) {
   var g = {
-    D: { B: 1, E: -1 },
-    B: { B: -1, D: 1, C: 1 },
-    C: { B: -1, C: 1 },
-    A: { B: 1, E: 1, C: 0 },
-    E: { B: -1, A: 1 }
+    B: { D: 1 },
+    C: { B: -1 },
+    A: { B: 1, C: 0 },
   }
 //  var g2 = scramble(g)
   var g2 = {
-    A: { C: 0, E: 1, B: 1 },
-    E: { B: -1, A: 1 },
-
-    D: { B: 1, E: -1 },
-    B: { D: 1, B: -1, C: 1 },
-    C: { B: -1, C: 1 },
-
+    A: { C: 0, B: 1 },
+    B: { D: 1 },
+    C: { B: -1 },
   }
+
+  t.equal(
+    T.recalculate(T.reverse(g), {A: 0, C: 0.1}, 'D'),
+    null
+  )
+  t.equal(
+    T.recalculate(T.reverse(g2), {A: 0, C: 0.1}, 'D'),
+    null
+  )
   t.deepEqual(
-    T.traverse(g2, T.reverse(g), 3, 'A'),
+    T.traverse(g2, T.reverse(g2), 3, 'A'),
     T.traverse(g, T.reverse(g), 3, 'A')
   )
   t.end()
@@ -102,10 +112,27 @@ tape('order2', function (t) {
 
 })
 
+tape('order 3', function (t) {
+var g =  {
+  A: { D: 0, E: 1 },
+  D: { E: -1 },
+  E: { B: 1, E: -1, D: 1 },
+  C: { A: 1, B: 0, E: 1 },
+  B: { D: 1, B: 0} }
+var g2 = {
+  B: { D: 1 , B: 0 },
+  C: { E: 1, B: 0, A: 1 },
+  D: { E: -1 },
+  E: { E: -1, B: 1, D: 1 },
+  A: { E: 1, D: 0 } }
 
+  t.deepEqual(
+    T.traverse(g2, T.reverse(g2), 3, 'A'),
+    T.traverse(g, T.reverse(g), 3, 'A')
+  )
 
-
-
+  t.end()
+})
 
 
 

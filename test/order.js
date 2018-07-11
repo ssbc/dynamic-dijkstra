@@ -35,4 +35,22 @@ tape('action by self same-as', function (t) {
   t.end()
 })
 
+tape('action by friend', function (t) {
+  t.equal(opts.add(1, 1), 2)
+  t.equal(opts.add(1, -1), -2) //should this be -1.1?
+  t.equal(opts.add(1, 0), 1.1)
+  t.equal(opts.add(1, 2), 3)
+
+  t.end()
+})
+
+tape('action by blocked', function (t) {
+  //we ignore what blocked feeds think
+  t.equal(opts.add(-1, 1), null)
+  t.equal(opts.add(-1, -1), null) //should this be -1.1?
+  t.equal(opts.add(-1, 0), null) //should this also be blocked?
+  t.equal(opts.add(-1, 2), null)
+
+  t.end()
+})
 

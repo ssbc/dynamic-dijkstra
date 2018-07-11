@@ -34,18 +34,20 @@ module.exports = function (opts) {
     }
     else if(hops[to] !== _value) {
       if(opts.expand(_value, max)) {
-        if(to == 'A') {
-          console.log("UPDATE", to, hops[to], _value)
-          console.log(_g[to])
-        }
-       // console.log('add', from, to, value, [hops[to]])
-        hops[to] = _value
+        //if(to === 'D') console.log("SET D", hops[to], _value)
+        if(_value == null)
+          delete hops[to]
+        else
+          hops[to] = _value
       } else {
-        delete hops[to]
+        if(hops[to] != undefined) {
+          delete hops[to]
+          for(var _to in g[to])
+            exports.add(g, _g, max, hops, to, _to, g[to][_to], start)
+        }
       }
 
       if(opts.expand(hops[to], max)) {
-//        console.log('expand:', to, hops[to])
         for(var _to in g[to])
           exports.add(g, _g, max, hops, to, _to, g[to][_to], start)
       }
@@ -80,7 +82,7 @@ module.exports = function (opts) {
   exports.recalculate = function (_g, hops, target) {
     var value = null
     for(var k in _g[target])
-      if(hops[k] != null)
+      if(hops[k] != null && k !== target)
         value = opts.min(value, opts.add(hops[k], _g[target][k]))
     return value
   }
