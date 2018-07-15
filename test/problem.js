@@ -77,7 +77,7 @@ tape('order', function (t) {
 
   console.log(sum)
 
-  console.log('D', T.recalculate(T.reverse(g), 3, 'D'), 'A')
+//  console.log('D', T.recalculate(T.reverse(g), 3, 'D'), 'A')
 
   t.end()
 })
@@ -95,14 +95,14 @@ tape('order2', function (t) {
     C: { B: -1 },
   }
 
-  t.equal(
-    T.recalculate(T.reverse(g), {A: 0, C: 0.1}, 'D'),
-    null
-  )
-  t.equal(
-    T.recalculate(T.reverse(g2), {A: 0, C: 0.1}, 'D'),
-    null
-  )
+//  t.equal(
+//    T.recalculate(T.reverse(g), {A: 0, C: 0.1}, 'D'),
+//    null
+//  )
+//  t.equal(
+//    T.recalculate(T.reverse(g2), {A: 0, C: 0.1}, 'D'),
+//    null
+//  )
   t.deepEqual(
     T.traverse(g2, T.reverse(g2), 3, 'A'),
     T.traverse(g, T.reverse(g), 3, 'A')

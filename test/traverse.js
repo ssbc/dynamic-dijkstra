@@ -14,13 +14,6 @@ function down (o) {
   return _o
 }
 
-function replicate(o) {
-  var _o = {}
-  for(var k in o)
-    if(o[k] >= 0) _o[k] = o[k]
-  return _o
-}
-
 tape('simple', function (t) {
   var g = {
     A: {B: 1},
@@ -33,11 +26,6 @@ tape('simple', function (t) {
     hops
   )
 
-  g.A = {}
-  t.deepEqual(
-    T.remove(g, T.reverse(g), 3, hops, 'A', 'B'),
-    {A: 0}
-  )
   t.end()
 })
 
@@ -54,16 +42,11 @@ tape('chain with remove', function (t) {
   )
 
   g.A = {C:1}
-  T.add(g, T.reverse(g), 3, hops, 'A', 'C')
+
   t.deepEqual(
     T.traverse(g, T.reverse(g), 3, 'A'),
     {A:0, C: 1}
   )
-
-//  t.deepEqual(
-//    T.remove(g, T.reverse(g), 3, hops, 'A', 'B'),
-//    {A: 0, C: 1}
-//  )
 
   t.end()
 })
@@ -82,7 +65,7 @@ tape('non-order dependant', function (t) {
 
   g.C = {}
 
-  T.remove(g, T.reverse(g), 3, hops, 'C', 'D')
+  hops = T.traverse(g, T.reverse(g), 3, 'A')
 
   t.deepEqual(
     down(hops),
@@ -91,8 +74,6 @@ tape('non-order dependant', function (t) {
 
   g.C.D = -1
 
-  T.add(g, T.reverse(g), 3, hops, 'C', 'D', -1)
-
   t.deepEqual(
     down(T.traverse(g, T.reverse(g), 3, 'A')),
     {A: 0, B: 1, C: 0}
@@ -100,7 +81,6 @@ tape('non-order dependant', function (t) {
 
   g.D = {E: 1, F: 1}
 
-  console.log(g)
   t.deepEqual(
     down(T.traverse(g, T.reverse(g), 3, 'A')),
     {A: 0, B: 1, C: 0}
@@ -125,7 +105,7 @@ tape('non-order dependant', function (t) {
 
   g.C = {}
 
-  T.remove(g, T.reverse(g), 3, hops, 'C', 'D')
+  hops = T.traverse(g, T.reverse(g), 3, 'A')
 
   t.deepEqual(
     down(hops),
@@ -134,7 +114,7 @@ tape('non-order dependant', function (t) {
 
   g.C.D = -1
 
-  T.add(g, T.reverse(g), 3, hops, 'C', 'D', -1)
+//  T.add(g, T.reverse(g), 3, hops, 'C', 'D', -1)
 
   t.deepEqual(
     down(T.traverse(g, T.reverse(g), 3, 'A')),
@@ -323,6 +303,7 @@ tape('friend blocks an aquaintance', function (t) {
   t.end()
 })
 */
+
 
 
 
