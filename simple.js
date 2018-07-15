@@ -10,7 +10,7 @@ module.exports =  {
     if(a < 0) return null
     v = v || 0.1
     if(v >= 0) return a >= 0 ? a + v : a - v
-    else       return a >= 0 ? ~a : a
+    else       return a >= 0 ? a*-1 - 1 : a
   },
   initial: function () {
     return 0
