@@ -28,7 +28,7 @@ tape('action by self', function (t) {
 tape('action by self same-as', function (t) {
 
   t.equal(opts.add(0.1, 1), 1.1)
-  t.equal(opts.add(0.1, -1), -1) //should this be -1.1?
+  t.equal(opts.add(0.1, -1), -1.1) //should this be -1.1?
   t.equal(opts.add(0.1, 0), 0.2)
   t.equal(opts.add(0.1, 2), 2.1)
 
@@ -53,4 +53,5 @@ tape('action by blocked', function (t) {
 
   t.end()
 })
+
 

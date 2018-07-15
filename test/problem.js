@@ -135,4 +135,104 @@ var g2 = {
 })
 
 
+tape('order 4', function (t) {
+  var g = {
+    F: {
+      I: 0, B: 0},
+    A: {
+      E: 0, B: 1
+    },
+    B: { F: 0 },
+    E: {
+      B: -1
+    }
+  }
 
+//  var g2 = {
+//    C: { G: 1, E: 0 },
+////    F: { G: -1, B: 0, D: -1, C: 1, I: 0, E: 1 },
+////    I: { A: 0, D: 1, H: 1 },
+////    G: { A: 1, C: 1 },
+//    A: { B: 1, E: 0, G: -1 },
+////    B: { F: 0, B: 1, G: -1 },
+// //   D: { F: 0, G: 1, C: -1 },
+//    E: { B: -1 },
+// //   H: { A: 1 }
+//  }
+
+  var g2 = scramble(g)
+
+  t.deepEqual(
+    T.traverse(g2, T.reverse(g2), 3, 'A'),
+    T.traverse(g, T.reverse(g), 3, 'A')
+  )
+
+  t.end()
+})
+
+tape('order3', function (t) {
+  var g =  {
+    A: { F: 1, D: 1, E: 1 },
+    G: { J: 0 },
+    D: { F: 1, J: -1, A: 1 },
+    H: { B: 1, G: 0, D: 1, A: 1, C: 1 },
+    C: { H: 1, J: 1, G: 0 },
+    E: { A: 1,
+      I: -1
+    },
+    J: { C: 1, F: 1 },
+    F: {
+      G: 0
+    },
+  }
+  var g2 = {
+    E: { A: 1, I: -1 },
+    J: { C: 1, F: 1 },
+    G: { J: 0 },
+    F: { G: 0 },
+    A: { E: 1, F: 1, D: 1 },
+    C: { H: 1, J: 1, G: 0 },
+    D: { F: 1, J: -1, A: 1 },
+    H: { A: 1, D: 1, B: 1, G: 0, C: 1 },
+  }
+
+  t.deepEqual(
+    T.traverse(g2, T.reverse(g2), 3, 'A'),
+    T.traverse(g, T.reverse(g), 3, 'A')
+  )
+
+  console.log(T.brute(g2, null, 3, 'A', 0, true))
+
+  t.end()
+})
+
+tape('order4', function (t) {
+var g =  { C: { H: 0, E: -1 },
+  A: { E: 0, G: 1, F: 0, D: -1 },
+  H: { A: 1, G: -1, B: 1 },
+  D: { C: -1, K: 1, A: 1, B: -1 },
+  E: { B: 1, I: 1, H: 1, J: 0 },
+  B: { J: 1, K: 1 },
+  K: { G: 1, B: -1, C: 1 },
+  I: { G: 1, H: 1, C: 1, A: 1 },
+  F: { A: 0 },
+  G: { K: 1 },
+  J: { C: 0, D: 1, A: 1 } }
+var g2 = { E: { H: 1, I: 1, B: 1, J: 0 },
+  G: { K: 1 },
+  A: { F: 0, G: 1, D: -1, E: 0 },
+  I: { H: 1, A: 1, C: 1, G: 1 },
+  D: { C: -1, B: -1, A: 1, K: 1 },
+  H: { G: -1, B: 1, A: 1 },
+  J: { A: 1, D: 1, C: 0 },
+  K: { C: 1, G: 1, B: -1 },
+  C: { E: -1, H: 0 },
+  B: { K: 1, J: 1 },
+  F: { A: 0 } }
+
+  t.deepEqual(
+    T.brute(g2, null, 3, 'A', 0, true),
+    T.traverse(g, null, 3, 'A', 0, true)
+  )
+  t.end()
+})

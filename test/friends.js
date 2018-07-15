@@ -1,6 +1,6 @@
 
 var T = require('../')(require('../simple'))
-var friends = require('../output.json')
+var friends = require('./data.json')
 for(var k in friends)
   for(var j in friends[k])
     if(friends[k][j] === true)
