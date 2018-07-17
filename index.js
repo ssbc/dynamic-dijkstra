@@ -1,7 +1,7 @@
 'use strict'
 var _Heap = require('heap')
 var Heap = function (cmp) { return new _Heap(cmp) }
-
+var LOG = false
 module.exports = function (opts) {
   var exports = {}
 
@@ -24,11 +24,13 @@ module.exports = function (opts) {
   function _loop (g, max, hops, next) {
     while(!next.empty()) {
       var k = next.pop()
-//      console.log('loop', k)
+      if(LOG)
+        console.log('loop', k, hops[k])
       if(opts.expand(hops[k], max))
         for(var j in g[k]) {
           var _h = opts.min(hops[j], opts.add(hops[k], g[k][j]))
-  //        console.log(k,j, [hops[j], _h])
+          if(LOG)
+            console.log(k,j, [hops[j], _h])
           if(isNaN(_h)) throw new Error('NaN')
           if(_h != hops[j]) {
             hops[j] = _h
@@ -43,7 +45,9 @@ module.exports = function (opts) {
     var hops = {}
     hops[from] = opts.initial()
     var next = Heap(function (a, b) {
-      return hops[a] - hops[b]
+      if(hops[a] == null || hops[b] == null)
+        throw new Error('insert with null hops')
+       return hops[a] - hops[b]
     }, function (k) { return hops[k] })
     next.push(from)
     return _loop(g, max, hops, next)
@@ -77,7 +81,7 @@ module.exports = function (opts) {
     for(var k in maybe)
       if(hops[k])
         for(var j in _g[k])
-          if(!maybe[j])
+          if(!maybe[j] && hops[j] != null)
             update[j] = true
     return update
   }
@@ -102,9 +106,9 @@ module.exports = function (opts) {
         var next = Heap(function (a, b) {
           return hops[a] - hops[b]
         }, function (k) { return hops[k] })
+        hops[to] = h
         next.push(to)
 
-        hops[to] = h
         _loop(g, max, hops, next)
         //we added the edge.
         //now check if this has brought other edges into the graph
@@ -140,30 +144,20 @@ module.exports = function (opts) {
 
 //        (hops[to] === opts.min(hops[to], opts.add(hops[from], value)))
       ) {
-//        console.log('skip', hops[from], hops[to])
-/*
-        console.log("SKIP REMOVE", hops[from], hops[to], value,
-        {
-          to:hops[to],
-          add: opts.add(hops[from], value),
-          min: opts.min(
-            hops[to], opts.add(hops[from], value)
-          )
-        }
-        )
-*/
+
         g[from] = g[from] || {}
         _g[to] = _g[to] || {}
         g[from][to] = _g[to][from] = value
         return hops
       }
 
-//      console.log(
-//        'DECREMENT',
-//        {from: hops[from], to: hops[to]},
-//        [from, to, value]
-//      )
-
+      if(LOG)
+        console.log(
+          'DECREMENT',
+          {from: hops[from], to: hops[to]},
+          [from, to, value]
+        )
+      
       var maybe = exports.uncertain(g, hops, max, to)
 //      console.log('maybe', maybe)
       for(var k in maybe)
