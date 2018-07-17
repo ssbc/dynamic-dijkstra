@@ -1,16 +1,27 @@
 //what happens when you block a same-as
-module.exports =  {
-  min: function (a, b) {
+
+function min (a, b) {
     if(a == null) return b
     if(b == null) return a
-    if(Math.abs(a) == Math.abs(b)) return a < 0 || b < 0 ? Math.abs(a) * -1 : Math.abs(a)
+    if(Math.abs(a) == Math.abs(b)) {
+      return a > b ? a : b
+    }
     return Math.abs(a) < Math.abs(b) ? a : b
+  }
+module.exports =  {
+  lt: function (a, b) {
+    if(a < 0) return false
+    if(a < b) return true
+  },
+  min: function (a, b) {
+    if(min(a,b) != min(b, a)) throw new Error('min not associative')
+    return min(a, b)
   },
   add: function (a, v) {
     if(a < 0) return null
     v = v || 0.1
     if(v >= 0) return a >= 0 ? a + v : a - v
-    else       return a >= 0 ? a*-1 - 1 : a
+    else       return a >= 0 ? a*-1 + v : a
   },
   initial: function () {
     return 0
@@ -19,6 +30,11 @@ module.exports =  {
     return v >= 0 && v < max
   }
 }
+
+
+
+
+
 
 
 
