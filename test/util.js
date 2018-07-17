@@ -44,7 +44,14 @@ exports.shuffle = function (g) {
 
 }
 
-
-
-
+function randomKey (o) {
+  var keys = Object.keys(o)
+  return keys[~~(Math.random()*keys.length)]
+}
+exports.randomEdge = function (g) {
+  var from = randomKey(g)
+  return {from: from, to: randomKey(g[from])}
+  
+}
+exports.randomNode = randomKey
 
