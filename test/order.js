@@ -54,4 +54,9 @@ tape('action by blocked', function (t) {
   t.end()
 })
 
+tape('min follow and block', function (t) {
 
+  t.equal(opts.min(2, -2), 2)
+
+  t.end()
+})
