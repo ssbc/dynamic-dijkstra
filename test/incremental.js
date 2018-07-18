@@ -30,7 +30,8 @@ function equal(a, e) {
 
 for(var i = 0; i < 10000;i ++) {
 //  console.log('---')
-  console.log(i)
+  if(!(i%1000)) console.log(i)
+
   var g = u.random(10, 6, [1,2])
   var g2 = u.random(5, 1, [1,0])
   //console.log("g", g)
@@ -81,10 +82,5 @@ for(var i = 0; i < 10000;i ++) {
   //check this is the same as a single traversal
 //  equal(hops, T.traverse(g4, null, 3, 'A'))
 }
-
-
-
-
-
 
 
