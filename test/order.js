@@ -50,6 +50,7 @@ tape('action by blocked', function (t) {
   t.equal(opts.add(-1, -1), null) //should this be -1.1?
   t.equal(opts.add(-1, 0), null) //should this also be blocked?
   t.equal(opts.add(-1, 2), null)
+  t.equal(opts.add(1, -2), -3)
 
   t.end()
 })
@@ -57,6 +58,8 @@ tape('action by blocked', function (t) {
 tape('min follow and block', function (t) {
 
   t.equal(opts.min(2, -2), 2)
+  t.equal(opts.min(0, -3), 0)
 
   t.end()
 })
+
