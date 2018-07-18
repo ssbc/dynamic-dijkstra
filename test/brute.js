@@ -37,7 +37,6 @@ for(var i = 0; i < N; i++) {
   var g = random(20, 3, [1,1,2,0,-1])
   var hops = T.brute(g, T.reverse(g), 3, 'A', 1000)
   console.log('---')
-  T.assertFlat(g, T.reverse(g), hops, 3, 'A')
   for(var j = 0; j < M; j++) {
     var g2 = shuffle(g)
     try {
@@ -75,4 +74,5 @@ console.log('consistent')
   console.log('edges/ms', edges/time, i, time, edges, global.R)
 
 })()
+
 
