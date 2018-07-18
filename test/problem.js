@@ -207,32 +207,128 @@ tape('order3', function (t) {
 })
 
 tape('order4', function (t) {
-var g =  { C: { H: 0, E: -1 },
-  A: { E: 0, G: 1, F: 0, D: -1 },
-  H: { A: 1, G: -1, B: 1 },
-  D: { C: -1, K: 1, A: 1, B: -1 },
-  E: { B: 1, I: 1, H: 1, J: 0 },
-  B: { J: 1, K: 1 },
-  K: { G: 1, B: -1, C: 1 },
-  I: { G: 1, H: 1, C: 1, A: 1 },
-  F: { A: 0 },
-  G: { K: 1 },
-  J: { C: 0, D: 1, A: 1 } }
-var g2 = { E: { H: 1, I: 1, B: 1, J: 0 },
-  G: { K: 1 },
-  A: { F: 0, G: 1, D: -1, E: 0 },
-  I: { H: 1, A: 1, C: 1, G: 1 },
-  D: { C: -1, B: -1, A: 1, K: 1 },
-  H: { G: -1, B: 1, A: 1 },
-  J: { A: 1, D: 1, C: 0 },
-  K: { C: 1, G: 1, B: -1 },
-  C: { E: -1, H: 0 },
-  B: { K: 1, J: 1 },
-  F: { A: 0 } }
+  var g =  {
+    C: { H: 0, E: -1 },
+    A: { E: 0, G: 1, F: 0, D: -1 },
+    H: { A: 1, G: -1, B: 1 },
+    D: { C: -1, K: 1, A: 1, B: -1 },
+    E: { B: 1, I: 1, H: 1, J: 0 },
+    B: { J: 1, K: 1 },
+    K: { G: 1, B: -1, C: 1 },
+    I: { G: 1, H: 1, C: 1, A: 1 },
+    F: { A: 0 },
+    G: { K: 1 },
+    J: { C: 0, D: 1, A: 1 }
+  }
+  var g2 = {
+    E: { H: 1, I: 1, B: 1, J: 0 },
+    G: { K: 1 },
+    A: { F: 0, G: 1, D: -1, E: 0 },
+    I: { H: 1, A: 1, C: 1, G: 1 },
+    D: { C: -1, B: -1, A: 1, K: 1 },
+    H: { G: -1, B: 1, A: 1 },
+    J: { A: 1, D: 1, C: 0 },
+    K: { C: 1, G: 1, B: -1 },
+    C: { E: -1, H: 0 },
+    B: { K: 1, J: 1 },
+    F: { A: 0 }
+  }
 
   t.deepEqual(
-    T.brute(g2, null, 3, 'A', 0, true),
-    T.traverse(g, null, 3, 'A', 0, true)
+    T.brute(g2, null, 3, 'A'),
+    T.traverse(g, null, 3, 'A')
   )
   t.end()
 })
+
+tape('remove', function (t) {
+  var g =  {
+    A: { B: 2, C: 0 },
+    D: { C: 2, E: 2, B: 1 },
+    B: { E: 2 },
+    C: { B: 2, D: 1, E: 2, A: 1 },
+    E: { A: 2, D: 2, B: 2, C: 2 }
+  }
+  var hops = T.traverse(g, null, 3, 'A')
+  console.log('hops', hops)
+  console.log(g)
+
+  T.update(g, T.reverse(g), hops, 3, 'A', 'C', 'D', -1)
+  console.log(g)
+  t.deepEqual(hops, T.traverse(g, null, 3, 'A'))
+  t.end()
+})
+
+function testIncremental(t, g, j,k,v) {
+  var hops = T.traverse(g, null, 3, 'A')
+  var _hops = T.traverse(g, null, 3, 'A')
+  console.log(g)
+  console.log('initial', hops)
+  var _g = T.reverse(g)
+  var maybe = T.uncertain(g, hops, 3, k)
+  console.log(j,k,v)
+  console.log(maybe)
+//  for(var l in maybe)
+//    t.ok(hops[l] > hops[k], 'each maybe must be distance from source')
+
+  T.update(g, _g, hops, 3, 'A', j,k,v)
+  t.deepEqual(hops, _hops)
+
+}
+
+tape('incremental remove', function (t) {
+  var g =  {
+    C: { B: 1, A: 2, E: 2, C: -1, D: -1 },
+    D: { B: 1, E: 1 },
+    E: { C: -1, B: 1 },
+    A: { E: 1, B: 1, C: 2 },
+    B: { C: 1, E: 0 }
+  }
+  testIncremental(t, g, 'C', 'E', -1)
+  t.end()
+})
+
+tape('incremental remove2', function (t) {
+  var g =  {
+    C: { B: 2, D: 0, A: 1 },
+    D: { E: 2, C: 2, B: 2 },
+    E: { D: 1, C: 1, B: 1 },
+    A: { B: 1, C: 2 },
+    B: { A: 1, C: -1 }
+  }
+  testIncremental(t, g, 'C','C', -1)
+  t.end()
+})
+
+tape('incremental remove 3', function (t) {
+  var g =  { A: { B: 0, D: 1 },
+    C: { A: 2, E: 2, D: 1, B: 2 },
+    D: { A: 2, B: -1, E: 1 },
+    B: { D: 2, E: -1, A: 2 },
+    E: { C: 1, D: 1, B: -1 }
+  }
+
+  testIncremental(t, g, 'E','B', -1)
+  t.end()
+})
+
+
+tape('incremental remove 4', function (t) {
+  var g =  {
+    B: { C: -1, J: 2, H: 2, E: 2, D: 1 },
+    J: { A: 2, C: 1, D: 1, B: -1 },
+    I: { E: 1, J: 1, A: 2, G: 2, C: 2 },
+    F: { D: 2, G: 2, E: 2, B: 1, H: 2 },
+    A: { B: 0, I: 1, D: 1, G: 2, J: 1, E: 0 },
+    C: { I: -1, F: 2, H: 1, B: 2, D: 0 },
+    G: { J: 1, H: 1, C: 1, B: 1, I: 1, A: 1 },
+    E: { H: 1, B: 1 },
+    H: { B: 2, J: 1, I: 1 },
+    D: { C: 1, J: 2, G: 1 }
+  }
+  var edge =  { from: 'H', to: 'B', value: -1 }
+  testIncremental(t, g, edge.from, edge.to, edge.value)
+  t.end()
+})
+
+
