@@ -250,9 +250,42 @@ tape('same-as blocks a same-as friend', function (t) {
     C: {D: -1},
   }
 
+  //D:1.1 and -1.1 and 1.1 wins
   t.deepEqual(
     down(T.traverse(g, T.reverse(g), 3, 'A')),
-    {A: 0, C: 0, B: 0}
+    {A: 0, C: 0, B: 0, D: 1}
+  )
+  t.end()
+})
+
+// a "distant follow". replicate them, but not their friends.
+tape('friend blocks an aquaitance', function (t) {
+  //same as is -0.1 block 
+  var g = {
+    A: { C: 1, B: 2},
+    B: {},
+    C: {B: -1},
+  }
+
+  t.deepEqual(
+    down(T.traverse(g, T.reverse(g), 3, 'A')),
+    {A: 0, C: 1, B:2}
+  )
+  t.end()
+})
+
+tape('same-as\'s friend blocks an aquaitance', function (t) {
+  //same as is -0.1 block 
+  var g = {
+    A: { D: 0, B: 2},
+    B: {},
+    D: { C: 1},
+    C: {B: -1},
+  }
+
+  t.deepEqual(
+    down(T.traverse(g, T.reverse(g), 3, 'A')),
+    {A: 0, C: 1, D: 0, B: 2}
   )
   t.end()
 })
@@ -281,32 +314,58 @@ tape('friend blocks a foaf', function (t) {
 
   t.deepEqual(
     down(T.traverse(g, T.reverse(g), 3, 'A')),
-    {A: 0, C: 1, B: 1}
+    {A: 0, C: 1, B: 1, D: 2}
   )
   t.end()
 })
 
-/*
-// a "distant follow". replicate them, but not their friends.
-
-tape('friend blocks an aquaintance', function (t) {
+tape('remove ', function (t) {
   var g = {
-    A: { C: 1, B: 2},
-    B: {},
-    C: {B: -1}
+    A: { B: 1, C: 1 },
+    C: { D: 1, B: 1 },
+    D: { E: 0 },
+    E: { D: 0 }
   }
-
+  var hops = T.traverse(g, null, 3, 'A')
   t.deepEqual(
-    down(T.traverse(g, T.reverse(g), 3, 'A')),
-    {A: 0, C: 1, B: 2}
+    hops,
+    {A: 0, B: 1, C: 1, D: 2, E: 2.1}
   )
+
+  T.update(g, T.reverse(g), hops, 3, 'A',
+    //C blocks D, which should also remove E, but not B.
+    'C', 'D', -1
+  )
+  console.log(hops)
+  t.deepEqual(hops, T.traverse(g, null, 3, 'A'))
   t.end()
 })
-*/
 
 
 
+return
+tape('remove ', function (t) {
+  var g = {
+    A: { B: 1, C: 1 },
+    C: { D: 1, B: 1 },
+    B: { E: 2 }, //this causes distance to E to just increase
+    D: { E: 0 },
+    E: { D: 0 }
+  }
+  var hops = T.traverse(g, null, 3, 'A')
+  t.deepEqual(
+    hops,
+    {A: 0, B: 1, C: 1, D: 2, E: 2.1}
+  )
 
+  T.update(g, T.reverse(g), hops, 3, 'A',
+    //C blocks D, which means length to E is now 3 (via B)
+    'C', 'D', -1
+  )
+  console.log(hops)
+  t.deepEqual(hops, T.traverse(g, null, 3, 'A'))
+  t.end()
+})
 
 
 
