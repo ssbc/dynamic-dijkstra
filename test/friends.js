@@ -1,9 +1,47 @@
 'use strict'
+var fs = require('fs')
+var path = require('path')
 var opts = require('../simple')
 var T = require('../')(opts)
 var friends = require('./data.json')
 var assert = require('assert')
+
+var CHECK = false
+
+function update_graphs(g, _g, j, k, v) {
+  g[j] = g[j] || {}
+  //oops: this was previously _g[k] = g[k] || {}
+  //took me ages to figure this out!
+  _g[k] = _g[k] || {}
+  g[j][k] = _g[k][j] = v
+}
+
+function assertEqualGraphs (g, g2, message) {
+  var missing = 0
+  for(var j in g)
+    for(var k in g[j])
+      if(g2[j][k] !== g[j][k]) {
+        console.log(j, k, g[j][k], g2[j][k], hops[k])
+        missing ++
+      }
+  if(missing)
+    throw new Error('missing edges:' + missing + ' '+ message)
+}
+
+function compareHops(hops, _hops, j, k) {
+  var d = 0
+  for(var k in hops) {
+    if(hops[k] != _hops[k]) {
+      d++
+      console.log(k, {prev: hops[k], new: _hops[k]})
+    }
+  }
+  return d
+
+}
+
 var g = {}
+
 for(var k in friends)
   for(var j in friends[k]) {
     g[k] = g[k] || {}
@@ -26,15 +64,6 @@ function clone (o) {
 }
 
 var me = "@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519"
-//console.log('start')
-//hmm, JIT actually speeds this up from around 200 to ~80 ms
-
-for(var i = 0; i < 10; i++) {
-  var start = Date.now()
-  var hops = T.traverse(g, null, 3, me)
-  console.log({time: Date.now()-start, nodes:Object.keys(hops).length})
-//console.log(hops)
-}
 
 var hops = {}, counts = {}
 
@@ -52,8 +81,12 @@ var g2 = {}, _g2 = {}
 var e = 0, ts = Date.now()
 var increment = 0, decrement = 0, check = 0, check2 = 0, check3 = 0
 
+function clone (o) {
+  return JSON.parse(JSON.stringify(o))
+}
+
 var total_updates = 0, total_updates2 = 0, total_decrements = 0
-var hops = {}, skipped = {}, _hops = {}
+var hops = {}, skipped = {}, _hops = {}, state
 _hops[me] = hops[me] = 0
 var changes = {}
 for(var j in g)
@@ -66,35 +99,100 @@ for(var j in g)
         total_decrements ++
 
 //        var _hops = T.traverse(g2, null, 3, me)
-        var already_closer_new_edge = hops[j] >= 0 && hops[j] < hops[k] && _v == null && hops[k] >= 0
+        var previous_hops = _hops
+        var already_closer_new_edge = (
+          _v == null &&
+          opts.min(hops[k], opts.add(hops[j], v)) == hops[k]
+//          hops[j] >= 0 && hops[j] < hops[k] &&
+//          _v == null && hops[k] >= 0 &&
+//          opts.min(hops[j], opts.add(hops[j], v)) == hops[k]
+        )
+
         var _v = g2[j] && g2[j][k]
+
+//        var g3 = clone(g2)
+//        var _g3 = clone(_g2)
+
+//        assert.deepEqual(g3, g2)
 
         //check that the traversals are the same
         //---------------------------
-        var maybe = T.uncertain(g, hops, 3, k)
         var start = process.hrtime()
         var type
-        if(false && already_closer_new_edge) {
+
+        if(true && already_closer_new_edge) {
           type = 'already_closer'
-          g2[j] = g2[j] || {}
-          _g2[k] = g2[k] || {}
-          g2[j][k] = _g2[k][j] = v
+          update_graphs(g2, _g2, j,k,v)
         }
         else if(hops[k] == null && hops[j] >= 0) {
           type = 'new_edge'
-          g2[j] = g2[j] || {}
-          _g2[k] = g2[k] || {}
-          g2[j][k] = _g2[k][j] = v
+          update_graphs(g2, _g2, j,k,v)
           if(opts.expand(hops[j], 3))
             hops[k] = opts.add(hops[j], v)
+        } else if(
+          hops[j] <= hops[k] &&
+          //if the current value would beat this link,
+          //check wether there is something else to back it up.
+          hops[k] === opts.min(hops[k], opts.add(hops[j], v)) &&
+          (function () {
+            for(var _j in _g2[k])
+              if(_j !== j && opts.add(hops[_j], g2[_j][k]) === hops[k]) {
+                return true
+              }
+          }())
+        ) {
+          type = 'backlink'
+          if(false) {
+    
+            var __hops = clone(hops)
+            var g4 = clone(g2)
+            assert.deepEqual(g4, g2, 'graph copied')
+            var _g4 = clone(_g2)
+
+            console.log('PRECHECK>>')
+              assertEqualGraphs(g2, g4, ' edge missing from g4')
+              assertEqualGraphs(g4, g2, ' additional edge over g2')
+              assertEqualGraphs(_g2, _g4, ' edge missing from _g4')
+              assertEqualGraphs(_g4, _g2, ' additional edge over _g2')
+            console.log('<<PRECHECK')
+
+            T.update(g2, _g2, hops, 3, me, j, k, v)
+            console.log("UPDATED")
+
+            assert.equal(g2[j][k], v, 'copied value')
+            assert.equal(_g2[k][j], v, 'copied _value')
+
+            update_graphs(g4, _g4, j,k,v)
+            assert.deepEqual(__hops, hops)
+
+            assert.equal(g4[j][k], g2[j][k])
+            assert.equal(_g4[j][k], _g2[j][k])
+
+            console.log('ADD', [j,k,v])
+
+            console.log('POSTCHECK>>')
+            assertEqualGraphs(g2, g4, ' edge missing from g4')
+            assertEqualGraphs(g4, g2, ' additional edge over g2')
+            console.log('reverse')
+            assertEqualGraphs(_g4, _g2, ' additional edge over _g2')
+            console.log('reverse2')
+            assertEqualGraphs(_g2, _g4, ' edge missing from _g4')
+            console.log('<<POSTCHECK')
+
+            assert.deepEqual(g4, g2)
+            assert.deepEqual(_g4, _g2)
+
+          } else
+            update_graphs(g2, _g2, j,k,v)
         }
         else {
           type = 'update'
           T.update(g2, _g2, hops, 3, me, j, k, v)
         }
-        counts[type] = (counts[type] || 0) + 1
         var d, _dec
         decrement += _dec = process.hrtime(start)[1]
+
+        counts[type] = (counts[type] || 0) + 1
         //---------------------------
 
         var added = 0, removed = 0, changed = 0
@@ -107,56 +205,59 @@ for(var j in g)
             if(hops[k] == null) removed ++
         })()
 
-//        if(/*added + removed && */already_closer_new_edge)
-
-        console.log({
+        state = {
           type: type,
           counts: counts,
           already_closer: already_closer_new_edge,
           source_in_hops: _hops[j] != null,
           from: _hops[j], to: _hops[k], value: v,
           changed: [added, removed, changed],
-          feeds: Object.keys(hops).length
-        })
+          feeds: Object.keys(hops).length,
+          decrement: decrement/1000000
+        }
 
-        _hops = T.traverse(g2, null, 3, me)
-        assert.deepEqual(Object.keys(hops).length, Object.keys(_hops).length)
-        for(var l in hops) {
-          if(hops[l] != _hops[l]) {
-            console.log({prev: hops[l], new: _hops[l]})
-            console.log(j,k,l)
-//            throw new Error('weird update')
+        if(CHECK) {
+        var __hops = T.traverse(g2, null, 3, me)
+          if(compareHops(hops, __hops)) {
+            console.log(state)
+            throw new Error('hops wrong')
           }
         }
-        assert.deepEqual(hops, _hops)
-
-//        var already_closer_new_edge = _hops[j] >= 0 && _hops[j] >= _hops[k] && _v == null
-
-//        if(added + removed) {
-
-  //      }
-
 /*
-        if(
-          false &&
-          //hops[j] != null &&
-          //(hops[j] > hops[k]) ||
-          (  false
-            //hops[k] >= 0 && hops[j] != null &&
-            //opts.min(hops[k], opts.add(hops[j], v)) != opts.add(hops[j], v)
+        assert.deepEqual(_hops3, _hops, 'pre-update hops equal')
+        assert.notDeepEqual(g3, g2)
+
+        T.update(g3, _g3, _hops3, 3, me, j, k, v)
+        assert.equal(g3[j][k], g2[j][k])
+        assertEqualGraphs(g2, g3, ' edge missing from g3')
+        assertEqualGraphs(g3, g2, ' additional edge over g2')
+
+        assert.deepEqual(g2, g3, 'shortcut graphs equal')
+*/
+/*
+        _hops = T.traverse(g2, null, 3, me)
+//        if(already_closer_new_edge)
+//          assert.deepEqual(previous_hops, _hops, 'already closer: no change?')
+
+        try {
+//          assert.deepEqual(Object.keys(hops).length, Object.keys(_hops).length)
+
+  //        compareHops(hops, _hops)
+    //        assert.deepEqual(hops, _hops)
+        } catch (err) {
+          delete g2[j][k]
+          fs.writeFileSync(path.join(__dirname, 'problem.json'),
+            JSON.stringify({
+              graph: g2,
+              hops: previous_hops,
+              edge: {from: j, to:k, value: v},
+              start: me,
+              max: 3
+            })
           )
-//          opts.lt(hops[k], opts.add(hops[j], v))
-        ) {
-          g2[j] = g2[j] || {}
-          _g2[k] = g2[k] || {}
-          g2[j][k] = _g2[k][j] = v
-          if(k == weird) {
-            console.log('skip', hops[j], hops[k], v, {add: opts.add(hops[j], v)})
-            console.log(g2[j][k])
-          }
+          console.log(state)
+          throw err
         }
-        else
-          T.update(g2, _g2, hops, 3, me, j, k, v)
 */
 
         if(null == g2[j][k])
@@ -192,7 +293,10 @@ for(var j in g)
 
     if(Date.now() > ts + 1000) {
       console.log(e, Object.keys(hops).length)
-//      var _hops = T.traverse(g2, null, 3, me)
+      console.log(state)
+      var _hops = T.traverse(g2, null, 3, me)
+      compareHops(hops, _hops)
+      assert.deepEqual(hops, _hops)
       ts = Date.now()
     }
 
@@ -201,29 +305,10 @@ for(var j in g)
 console.log({
   increment: increment/1000000,
   decrement: decrement/1000000,
-  check:check/1000000,
-//  check2: check2/1000000,
-  check3: check3/1000000,
-//  updates: total_updates,
-  updates2: total_updates2,
-  avg: total_updates2/total_decrements,
   changes: changes
 })
 
 //assert.deepEqual(g2, g, 'graphs are equal')
-
-function assertEqualGraphs (g, g2, message) {
-  var missing = 0
-for(var j in g)
-  for(var k in g[j])
-    if(g2[j][k] != g[j][k]) {
-      console.log(j, k, g[j][k], hops[k])
-      missing ++
-//      throw new Error('missing edge'+message)
-    }
-  if(missing)
-    throw new Error('missing edges:' + missing + ' '+ message)
-}
 
 var _hops = T.traverse(g2, null, 3, me)
 for(var k in hops)
@@ -238,19 +323,6 @@ assertEqualGraphs(g2, g, ' additional edge over g')
 //console.log(_hops)
 console.log(Object.keys(hops).length, Object.keys(_hops).length)
 assert.equal(Object.keys(hops).length, Object.keys(_hops).length)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
