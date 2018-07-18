@@ -2,6 +2,12 @@
 var _Heap = require('heap')
 var Heap = function (cmp) { return new _Heap(cmp) }
 var LOG = false
+
+var maybes = {}
+process.on('exit', function () {
+  console.log('maybes', maybes)
+})
+
 module.exports = function (opts) {
   var exports = {}
 
@@ -157,16 +163,21 @@ module.exports = function (opts) {
           {from: hops[from], to: hops[to]},
           [from, to, value]
         )
-      
+
       var maybe = exports.uncertain(g, hops, max, to)
-//      console.log('maybe', maybe)
+      var L = 0
       for(var k in maybe)
+        L ++
         if(hops[k] != null &&
           hops[k] < hops[to] && hops[k] > 0
         ) {
           throw new Error('maybe must be higher')
         }
+      L = Math.min(L, 10)
+      maybes[L] = (maybes[L] || 0)
+      var start = process.hrtime()
       var sources = exports.sources(_g, hops, maybe)
+
       g[from] = g[from] || {}
       _g[to] = _g[to] || {}
       g[from][to] = _g[to][from] = value
@@ -174,7 +185,9 @@ module.exports = function (opts) {
       sources[from] = true
       for(var k in maybe) delete hops[k]
 
-      return exports.updateAll(g, hops, max, sources)
+      exports.updateAll(g, hops, max, sources)
+      maybes[L] += process.hrtime(start)[1]/1000000
+      return hops
     }
 
     return hops
@@ -192,7 +205,6 @@ module.exports = function (opts) {
 
   return exports
 }
-
 
 
 
