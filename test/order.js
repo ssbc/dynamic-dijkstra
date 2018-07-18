@@ -60,6 +60,8 @@ tape('min follow and block', function (t) {
   t.equal(opts.min(2, -2), 2)
   t.equal(opts.min(0, -3), 0)
 
+  t.equal(opts.min(-3, opts.add(2, -2)), -3)
+
   t.end()
 })
 
