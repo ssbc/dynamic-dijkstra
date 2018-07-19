@@ -89,10 +89,18 @@ var total_updates = 0, total_updates2 = 0, total_decrements = 0
 var hops = {}, skipped = {}, _hops = {}, state
 _hops[me] = hops[me] = 0
 var changes = {}
-for(var j in g)
-  for(k in g[j]) {
+
+function eachEdge (g, iter) {
+  for(var j in g)
+    for(var k in g[j])
+      iter(j,k,g[j][k])
+}
+
+eachEdge(g, function (j, k, v) {
+//for(var j in g)
+//  for(k in g[j]) {
     //console.log(g[j][k])
-    var v = g[j][k]
+//    var v = g[j][k]
     e ++
     if(v < 0 || v == null) {
       ;(function () {
@@ -142,48 +150,7 @@ for(var j in g)
           }())
         ) {
           type = 'backlink'
-          if(false) {
-    
-            var __hops = clone(hops)
-            var g4 = clone(g2)
-            assert.deepEqual(g4, g2, 'graph copied')
-            var _g4 = clone(_g2)
-
-            console.log('PRECHECK>>')
-              assertEqualGraphs(g2, g4, ' edge missing from g4')
-              assertEqualGraphs(g4, g2, ' additional edge over g2')
-              assertEqualGraphs(_g2, _g4, ' edge missing from _g4')
-              assertEqualGraphs(_g4, _g2, ' additional edge over _g2')
-            console.log('<<PRECHECK')
-
-            T.update(g2, _g2, hops, 3, me, j, k, v)
-            console.log("UPDATED")
-
-            assert.equal(g2[j][k], v, 'copied value')
-            assert.equal(_g2[k][j], v, 'copied _value')
-
-            update_graphs(g4, _g4, j,k,v)
-            assert.deepEqual(__hops, hops)
-
-            assert.equal(g4[j][k], g2[j][k])
-            assert.equal(_g4[j][k], _g2[j][k])
-
-            console.log('ADD', [j,k,v])
-
-            console.log('POSTCHECK>>')
-            assertEqualGraphs(g2, g4, ' edge missing from g4')
-            assertEqualGraphs(g4, g2, ' additional edge over g2')
-            console.log('reverse')
-            assertEqualGraphs(_g4, _g2, ' additional edge over _g2')
-            console.log('reverse2')
-            assertEqualGraphs(_g2, _g4, ' edge missing from _g4')
-            console.log('<<POSTCHECK')
-
-            assert.deepEqual(g4, g2)
-            assert.deepEqual(_g4, _g2)
-
-          } else
-            update_graphs(g2, _g2, j,k,v)
+          update_graphs(g2, _g2, j,k,v)
         }
         else {
           type = 'update'
@@ -196,14 +163,15 @@ for(var j in g)
         //---------------------------
 
         var added = 0, removed = 0, changed = 0
-        ;(function () {
-          for(var k in hops) {
-            if(_hops[k] == null) added ++
-            else if(_hops[k] != hops[k]) changed ++
-          }
-          for(var k in _hops)
-            if(hops[k] == null) removed ++
-        })()
+
+//        ;(function () {
+//          for(var k in hops) {
+//            if(_hops[k] == null) added ++
+//            else if(_hops[k] != hops[k]) changed ++
+//          }
+//          for(var k in _hops)
+//            if(hops[k] == null) removed ++
+//        })()
 
         state = {
           type: type,
@@ -212,7 +180,7 @@ for(var j in g)
           source_in_hops: _hops[j] != null,
           from: _hops[j], to: _hops[k], value: v,
           changed: [added, removed, changed],
-          feeds: Object.keys(hops).length,
+//          feeds: Object.keys(hops).length,
           decrement: decrement/1000000
         }
 
@@ -294,13 +262,10 @@ for(var j in g)
     if(Date.now() > ts + 1000) {
       console.log(e, Object.keys(hops).length)
       console.log(state)
-      var _hops = T.traverse(g2, null, 3, me)
-      compareHops(hops, _hops)
-      assert.deepEqual(hops, _hops)
+//      assert.deepEqual(hops, _hops)
       ts = Date.now()
     }
-
-  }
+})
 //console.error(hops)
 console.log({
   increment: increment/1000000,
@@ -321,12 +286,9 @@ assertEqualGraphs(g, g2, ' edge missing from g2')
 assertEqualGraphs(g2, g, ' additional edge over g')
 
 //console.log(_hops)
+console.log(state)
 console.log(Object.keys(hops).length, Object.keys(_hops).length)
 assert.equal(Object.keys(hops).length, Object.keys(_hops).length)
-
-
-
-
 
 
 
