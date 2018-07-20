@@ -125,70 +125,102 @@ module.exports = function (opts) {
 
     } else {
       if(!value && !_g) throw new Error('expected increment:'+value)
-      var next = Heap(function (a, b) {
-        return hops[a] - hops[b]
-      }, function (k) { return hops[k] })
-
-      //if the path removed is the edge keeping this node
-      //in the graph, then the graph will totally change.
-
-      var _value_from_us = opts.add(hops[from], g[from] && g[from][to])
-      var value_from_us = opts.add(hops[from], value)
+      var j = from, k = to, v = value, _v = g[from] && g[from][to]
       if(
-        to === start || //don't ever remove self from graph
-        !opts.expand(hops[from], max) ||
-        (
-          false &&
-          //if the current value is the value from this branch
-          g[from] && g[from][to] === null &&
-          //this means we might be the one to bring this into the traversal
-          (
-            hops[to] !== opts.add(hops[from], value) &&
-            hops[to] === opts.min(hops[to], opts.add(hops[from], value))
-//            hops[to] === opts.min( _value_from_us &&
-//            value_from_us === opts.min(hops[to], value_from_us)
-          )
+        to === start || //don't ever block self
+        ( //already closer
+          //if previous value was null, or previous didn't set the hops value anyway.
+          (_v == null  || (opts.add(hops[j], _v) !== hops[k])) &&
+          opts.min(hops[k], opts.add(hops[j], v)) === hops[k]
+        ) || ( //unchanged hops
+          //if the current value not beat this link (but this in an update to our old value)
+          //quickly check that there is another link to beat it.
+          //this catches the case when someone unfollows, but there is another path the same length.
+            hops[k] == opts.add(hops[j], _v) && 
+            hops[k] === opts.min(hops[k], opts.add(hops[j], v)) &&
+            (function () {
+              for(var _j in _g[k])
+                if(_j !== j && opts.add(hops[_j], g[_j][k]) === hops[k]) {
+                  return true
+                }
+            }())
         )
-
-
-//        (hops[to] === opts.min(hops[to], opts.add(hops[from], value)))
       ) {
+        //won't change hops, so update graph and return
         update_graphs(g, _g, from, to, value)
         return hops
-      }
 
-      if(LOG)
-        console.log(
-          'DECREMENT',
-          {from: hops[from], to: hops[to]},
-          [from, to, value]
-        )
+      } else if (null && hops[j] >= 0) {
+        //only adds the new item, but won't expand since this is a block.
+        update_graphs(g2, _g2, j,k,v)
+        if(opts.expand(hops[j], 3))
+          hops[k] = opts.add(hops[j], v)
+      } else {
 
-      var maybe = exports.uncertain(g, hops, max, to)
-      var L = 0
-      for(var k in maybe)
-        L ++
-        if(hops[k] != null &&
-          hops[k] < hops[to] && hops[k] > 0
+        var next = Heap(function (a, b) {
+          return hops[a] - hops[b]
+        }, function (k) { return hops[k] })
+
+        //if the path removed is the edge keeping this node
+        //in the graph, then the graph will totally change.
+
+        var _value_from_us = opts.add(hops[from], g[from] && g[from][to])
+        var value_from_us = opts.add(hops[from], value)
+        if(
+          to === start || //don't ever remove self from graph
+          !opts.expand(hops[from], max) ||
+          (
+            false &&
+            //if the current value is the value from this branch
+            g[from] && g[from][to] === null &&
+            //this means we might be the one to bring this into the traversal
+            (
+              hops[to] !== opts.add(hops[from], value) &&
+              hops[to] === opts.min(hops[to], opts.add(hops[from], value))
+  //            hops[to] === opts.min( _value_from_us &&
+  //            value_from_us === opts.min(hops[to], value_from_us)
+            )
+          )
+
+
+  //        (hops[to] === opts.min(hops[to], opts.add(hops[from], value)))
         ) {
-          throw new Error('maybe must be higher')
+          update_graphs(g, _g, from, to, value)
+          return hops
         }
-      L = Math.min(L, 10)
 
-      maybes[L] = (maybes[L] || 0)
-      var start = process.hrtime()
-      var sources = exports.sources(_g, hops, maybe)
+        if(LOG)
+          console.log(
+            'DECREMENT',
+            {from: hops[from], to: hops[to]},
+            [from, to, value]
+          )
 
-      update_graphs(g, _g, from, to, value)
+        var maybe = exports.uncertain(g, hops, max, to)
+        var L = 0
+        for(var k in maybe)
+          L ++
+          if(hops[k] != null &&
+            hops[k] < hops[to] && hops[k] > 0
+          ) {
+            throw new Error('maybe must be higher')
+          }
+        L = Math.min(L, 10)
 
-      sources[from] = true
-      for(var _k in maybe) delete hops[_k]
+        maybes[L] = (maybes[L] || 0)
+        var start = process.hrtime()
+        var sources = exports.sources(_g, hops, maybe)
 
-      exports.updateAll(g, hops, max, sources)
-      maybes[L] += process.hrtime(start)[1]/1000000
-      return hops
+        update_graphs(g, _g, from, to, value)
+
+        sources[from] = true
+        for(var _k in maybe) delete hops[_k]
+
+        exports.updateAll(g, hops, max, sources)
+        maybes[L] += process.hrtime(start)[1]/1000000
+        return hops
+      }
     }
-
     return hops
 
   }
@@ -204,8 +236,4 @@ module.exports = function (opts) {
 
   return exports
 }
-
-
-
-
 
