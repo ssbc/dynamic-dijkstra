@@ -92,19 +92,22 @@ module.exports = function (opts) {
     return update
   }
 
+  function update_graphs(g, _g, from, to, value) {
+    g[from] = g[from] || {}
+    _g[to] = _g[to] || {}
+    g[from][to] = _g[to][from] = value
+  }
+
   exports.update = function (g, _g, hops, max, start, from,to,value) {
     hops[start] = opts.initial()
     //added edge cannot be in traversal if it's starting point isn't
-    if(value >= 0) {
-      g[from] = g[from] || {}
-      _g[to] = _g[to] || {}
-      g[from][to] = _g[to][from] = value
-    }
-
-    if(hops[from] == null || from == to) return hops
-    var h = opts.min(hops[to], opts.add(hops[from], value))
 
     if(value >= 0) {
+      update_graphs(g, _g, from, to, value)
+
+      if(hops[from] == null || from == to) return hops
+      var h = opts.min(hops[to], opts.add(hops[from], value))
+
       //if destination is max or more, do not add edge
       if(!opts.expand(hops[from], max)) return hops
 
@@ -150,10 +153,7 @@ module.exports = function (opts) {
 
 //        (hops[to] === opts.min(hops[to], opts.add(hops[from], value)))
       ) {
-
-        g[from] = g[from] || {}
-        _g[to] = _g[to] || {}
-        g[from][to] = _g[to][from] = value
+        update_graphs(g, _g, from, to, value)
         return hops
       }
 
@@ -174,16 +174,15 @@ module.exports = function (opts) {
           throw new Error('maybe must be higher')
         }
       L = Math.min(L, 10)
+
       maybes[L] = (maybes[L] || 0)
       var start = process.hrtime()
       var sources = exports.sources(_g, hops, maybe)
 
-      g[from] = g[from] || {}
-      _g[to] = _g[to] || {}
-      g[from][to] = _g[to][from] = value
+      update_graphs(g, _g, from, to, value)
 
       sources[from] = true
-      for(var k in maybe) delete hops[k]
+      for(var _k in maybe) delete hops[_k]
 
       exports.updateAll(g, hops, max, sources)
       maybes[L] += process.hrtime(start)[1]/1000000
