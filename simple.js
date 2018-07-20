@@ -14,7 +14,7 @@ module.exports =  {
     if(a < b) return true
   },
   min: function (a, b) {
-    if(min(a,b) != min(b, a)) throw new Error('min not associative')
+    if(min(a,b) != min(b, a)) throw new Error('min not associative:'+a+','+b)
     return min(a, b)
   },
   add: function (a, v) {
