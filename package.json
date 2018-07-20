@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "deep-merge": "^1.0.0",
+    "pull-stream": "^3.6.8",
     "tape": "^4.9.1"
   },
   "scripts": {
