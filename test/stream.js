@@ -4,7 +4,7 @@ var T = require('../')(opts)
 var assert = require('assert')
 var pull = require('pull-stream')
 
-var CHECK = false
+var CHECK = false, SHORTCUTS = false
 
 function update_graphs(g, _g, j, k, v) {
   g[j] = g[j] || {}
@@ -76,11 +76,11 @@ module.exports = function () {
         var start = process.hrtime()
         var type
 
-        if(already_closer) {
+        if(SHORTCUTS && already_closer) {
           type = 'already_closer'
           update_graphs(g2, _g2, j,k,v)
         }
-        else if(
+        else if(SHORTCUTS &&
           //if the current value would beat this link, check that there is another link to beat it.
           //this catches the case when someone unfollows, but there is another path the same length.
           (
@@ -97,7 +97,7 @@ module.exports = function () {
           type = 'backlink'
           update_graphs(g2, _g2, j,k,v)
         }
-        else if(new_edge) {
+        else if(SHORTCUTS && new_edge) {
           type = 'new_edge'
           update_graphs(g2, _g2, j,k,v)
           if(opts.expand(hops[j], 3))
