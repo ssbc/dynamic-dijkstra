@@ -60,9 +60,13 @@ module.exports = function () {
         total_decrements ++
         var _v = g2[j] && g2[j][k]
         var already_closer_new_edge = (
-          (_v == null || _v  === v || _v < 0) &&
+//          (_v == null || _v  === v || _v < 0) &&
 //          (hops[k] != opts.add(hops[j], v) || hops[k] < 0) &&
-          opts.min(hops[k], opts.add(hops[j], v)) == hops[k]
+//          opts.min(hops[k], opts.add(hops[j], v)) == hops[k]
+
+          //if previous value was null, or previous didn't set the hops value anyway.
+          (_v == null  || (opts.add(hops[j], _v) !== hops[k])) &&
+          opts.min(hops[k], opts.add(hops[j], v)) === hops[k]
         )
 
 
@@ -98,32 +102,30 @@ module.exports = function () {
         }
         else {
           type = 'update'
-          var hops2 = {}
-          for(var _k in hops) hops2[_k] = hops[_k]
-
-          var data = {
-            _v: _v,
-            v: v,
-            from: hops[j], to: hops[k],
-            closer: already_closer_new_edge,
-            add: opts.add(hops[j], v),
-            min: opts.min(hops[k], opts.add(hops[j], v)),
-            closer2: opts.min(hops[k], opts.add(hops[j], v)) == hops[k] && (v === _v)
-          }
-
-          var start = process.hrtime()
+//          var hops2 = {}
+//          for(var _k in hops) hops2[_k] = hops[_k]
+//
+//          var data = {
+//            _v: _v,
+//            v: v,
+//            from: hops[j], to: hops[k],
+//            closer: already_closer_new_edge,
+//            add: opts.add(hops[j], v),
+//            min: opts.min(hops[k], opts.add(hops[j], v)),
+//            closer2: opts.min(hops[k], opts.add(hops[j], v)) == hops[k]
+//          }
+//
+//          var start = process.hrtime()
 
           T.update(g2, _g2, hops, 3, me, j, k, v)
-
-          var time = process.hrtime(start)[1] / 1000000
-          var c = 0
-          for(var _k in hops) if(hops2[_k] !== hops[_k]) c++
-          var ch = changes[c] = (changes[c] || {count: 0, time: 0})
-          ch.count ++
-          ch.time += time
-          ch.avg = Math.round((ch.time / ch.count)*1000)/1000
-//          if(c === 0) console.log(data)
-
+//          var time = process.hrtime(start)[1] / 1000000
+//          var c = 0
+//          for(var _k in hops) if(hops2[_k] !== hops[_k]) c++
+//          var ch = changes[c] = (changes[c] || {count: 0, time: 0})
+//          ch.count ++
+//          ch.time += time
+//          ch.avg = Math.round((ch.time / ch.count)*1000)/1000
+////          if(c === 0) console.log(data)
         }
         var d, _dec
         decrement += _dec = process.hrtime(start)[1]
@@ -214,6 +216,8 @@ module.exports = function () {
 
   })
 }
+
+
 
 
 
