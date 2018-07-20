@@ -3,11 +3,6 @@ var _Heap = require('heap')
 var Heap = function (cmp) { return new _Heap(cmp) }
 var LOG = false
 
-var maybes = {}
-process.on('exit', function () {
-  console.log('maybes', maybes)
-})
-
 module.exports = function (opts) {
   var exports = {}
 
@@ -30,13 +25,9 @@ module.exports = function (opts) {
   function _loop (g, max, hops, next) {
     while(!next.empty()) {
       var k = next.pop()
-      if(LOG)
-        console.log('loop', k, hops[k])
       if(opts.expand(hops[k], max))
         for(var j in g[k]) {
           var _h = opts.min(hops[j], opts.add(hops[k], g[k][j]))
-          if(LOG)
-            console.log(k,j, [hops[j], _h])
           if(isNaN(_h)) throw new Error('NaN')
           if(_h != hops[j]) {
             hops[j] = _h
@@ -170,44 +161,21 @@ module.exports = function (opts) {
           to === start || //don't ever remove self from graph
           !opts.expand(hops[from], max) ||
           (
-            false &&
             //if the current value is the value from this branch
             g[from] && g[from][to] === null &&
             //this means we might be the one to bring this into the traversal
             (
               hops[to] !== opts.add(hops[from], value) &&
               hops[to] === opts.min(hops[to], opts.add(hops[from], value))
-  //            hops[to] === opts.min( _value_from_us &&
-  //            value_from_us === opts.min(hops[to], value_from_us)
             )
           )
-
-
-  //        (hops[to] === opts.min(hops[to], opts.add(hops[from], value)))
         ) {
           update_graphs(g, _g, from, to, value)
           return hops
         }
 
-        if(LOG)
-          console.log(
-            'DECREMENT',
-            {from: hops[from], to: hops[to]},
-            [from, to, value]
-          )
-
         var maybe = exports.uncertain(g, hops, max, to)
-        var L = 0
-        for(var k in maybe)
-          L ++
-          if(hops[k] != null &&
-            hops[k] < hops[to] && hops[k] > 0
-          ) {
-            throw new Error('maybe must be higher')
-          }
-        L = Math.min(L, 10)
 
-        maybes[L] = (maybes[L] || 0)
         var start = process.hrtime()
         var sources = exports.sources(_g, hops, maybe)
 
@@ -217,7 +185,6 @@ module.exports = function (opts) {
         for(var _k in maybe) delete hops[_k]
 
         exports.updateAll(g, hops, max, sources)
-        maybes[L] += process.hrtime(start)[1]/1000000
         return hops
       }
     }
