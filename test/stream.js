@@ -44,7 +44,7 @@ module.exports = function () {
   var e = 0, ts = Date.now()
   var increment = 0, decrement = 0, check = 0, check2 = 0, check3 = 0
   var total_updates = 0, total_updates2 = 0, total_decrements = 0
-  var counts = {}, state = {}, changes = {}
+  var counts = {}, state = {}, changes = {}, add = 0
   return pull.drain(function (edge) {
       var j = edge.from
       var k = edge.to
@@ -59,15 +59,16 @@ module.exports = function () {
       ;(function () {
         total_decrements ++
         var _v = g2[j] && g2[j][k]
-        var already_closer_new_edge = (
-//          (_v == null || _v  === v || _v < 0) &&
-//          (hops[k] != opts.add(hops[j], v) || hops[k] < 0) &&
-//          opts.min(hops[k], opts.add(hops[j], v)) == hops[k]
 
+        var already_closer = (
           //if previous value was null, or previous didn't set the hops value anyway.
           (_v == null  || (opts.add(hops[j], _v) !== hops[k])) &&
           opts.min(hops[k], opts.add(hops[j], v)) === hops[k]
         )
+
+        var new_edge = hops[k] == null && hops[j] >= 0
+
+        var unchanged_hops = opts.add(hops[j], v) === hops[k]
 
 
         //check that the traversals are the same
@@ -75,21 +76,17 @@ module.exports = function () {
         var start = process.hrtime()
         var type
 
-        if(true && already_closer_new_edge) {
+        if(already_closer) {
           type = 'already_closer'
           update_graphs(g2, _g2, j,k,v)
         }
-        else if(true && hops[k] == null && hops[j] >= 0) {
-          type = 'new_edge'
-          update_graphs(g2, _g2, j,k,v)
-          if(opts.expand(hops[j], 3))
-            hops[k] = opts.add(hops[j], v)
-        } else if(
-          true &&
-          hops[j] <= hops[k] &&
-          //if the current value would beat this link,
-          //check wether there is something else to back it up.
-          hops[k] === opts.min(hops[k], opts.add(hops[j], v)) &&
+        else if(
+          //if the current value would beat this link, check that there is another link to beat it.
+          //this catches the case when someone unfollows, but there is another path the same length.
+          (
+            hops[k] == opts.add(hops[j], _v) && 
+            hops[k] === opts.min(hops[k], opts.add(hops[j], v))
+          ) &&
           (function () {
             for(var _j in _g2[k])
               if(_j !== j && opts.add(hops[_j], g2[_j][k]) === hops[k]) {
@@ -100,6 +97,12 @@ module.exports = function () {
           type = 'backlink'
           update_graphs(g2, _g2, j,k,v)
         }
+        else if(new_edge) {
+          type = 'new_edge'
+          update_graphs(g2, _g2, j,k,v)
+          if(opts.expand(hops[j], 3))
+            hops[k] = opts.add(hops[j], v)
+        } 
         else {
           type = 'update'
 
@@ -133,7 +136,7 @@ module.exports = function () {
         state = {
           type: type,
           counts: counts,
-          already_closer: already_closer_new_edge,
+          already_closer: already_closer,
           source_in_hops: hops[j] != null,
           from: hops[j], to: hops[k], value: v,
           decrement: decrement/1000000,
@@ -173,6 +176,7 @@ module.exports = function () {
       })()
 
     } else {
+      counts.add = (counts.add || 0) + 1
       var start = process.hrtime()
       T.update(g2, _g2, hops, 3, me, j, k, v)
       _hops = hops
@@ -216,12 +220,6 @@ module.exports = function () {
 
   })
 }
-
-
-
-
-
-
 
 
 
