@@ -34,10 +34,6 @@ module.exports = function (opts) {
     return _g
   }
 
-  exports.traverse = function (g, _g, max, from) {
-    return exports.brute(g, _g, max, from)
-  }
-
   function _loop (g, max, hops, next) {
     while(!next.empty()) {
       var j = next.pop()
@@ -54,12 +50,10 @@ module.exports = function (opts) {
     return hops
   }
 
-  exports.brute = function (g, _g, max, from, C, LOG) {
+  exports.traverse = exports.brute = function (g, _g, max, from) {
     var hops = {}
     hops[from] = opts.initial()
     var next = Heap(function (a, b) {
-      if(hops[a] == null || hops[b] == null)
-        throw new Error('insert with null hops')
        return hops[a] - hops[b]
     }, function (k) { return hops[k] })
     next.push(from)
@@ -204,4 +198,6 @@ module.exports = function (opts) {
 
   return exports
 }
+
+
 
