@@ -65,7 +65,7 @@ for(var i = 0; i < 10000;i ++) {
       ;(function () {
         var g = clone(g4)
         var _g4 = T.reverse(g4)
-        hops = T.update(g4, _g4, hops, 3, 'A', edge.from, edge.to, -1)
+        T.update(g4, _g4, hops, 3, 'A', edge.from, edge.to, -1)
         var _hops = T.traverse(g4, null, 3, 'A')
       //  console.log('hops:',hops, '(updated)')
         try {
