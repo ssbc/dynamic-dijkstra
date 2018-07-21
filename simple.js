@@ -28,6 +28,12 @@ module.exports =  {
   },
   expand: function (v, max) {
     return v >= 0 && v < max
+  },
+  isAdd: function (v) {
+    return v >= 0
+  },
+  isRemove: function (v) {
+    return v < 0
   }
 }
 
