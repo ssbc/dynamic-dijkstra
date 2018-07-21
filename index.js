@@ -6,8 +6,20 @@ var LOG = false
 module.exports = function (opts) {
   var exports = {}
 
+  function getValueFromEdge(hops, j, v) {
+    return opts.add(hops[j], v)
+  }
+
   function getNewValue(hops, j, k, v) {
-    return opts.min(hops[k], opts.add(hops[j], v))
+    return opts.min(hops[k], getValueFromEdge(hops, j, v))
+  }
+
+  function isUnchangedByEdge (hops, j, k, v) {
+    return hops[k] === opts.add(hops[j], v)
+  }
+
+  function isUnchanged (hops, j, k, v) {
+    return hops[k] === getNewValue(hops, j, k, v)
   }
 
   //take a graph, and return it's inverse
@@ -66,7 +78,10 @@ module.exports = function (opts) {
     while(!next.empty()) {
       var j = next.pop()
       for(var k in g[j])
-        if(hops[k] === opts.add(hops[j], g[j][k])) {
+        if(
+          isUnchangedByEdge(hops, j,k,g[j][k])
+        //hops[k] === opts.add(hops[j], g[j][k])
+        ) {
           if(!maybe[k]) {
             maybe[k] = true
             next.push(k)
@@ -94,48 +109,52 @@ module.exports = function (opts) {
   }
 
   exports.update = function (g, _g, hops, max, start, from,to,value) {
-    hops[start] = opts.initial()
-    //added edge cannot be in traversal if it's starting point isn't
+    if(hops[start] == null) hops[start] = opts.initial()
 
-    if(value >= 0) {
+    //handle follow (aka increments)
+    if(opts.isAdd(value)) {
       update_graphs(g, _g, from, to, value)
 
+      //if from isn't within hops, then to won't be in hops either.
       if(hops[from] == null || from == to) return hops
-      var h = getNewValue(hops, from, to, value)
 
+      var h = getNewValue(hops, from, to, value)
       //if destination is max or more, do not add edge
       if(!opts.expand(hops[from], max)) return hops
 
       if(h != hops[to]) {
-        var next = Heap(function (a, b) { return hops[a] - hops[b] })
         hops[to] = h
-        next.push(to)
+        //if this edge is at the limit, we are done.
+        if(!opts.expand(hops[to], max)) return hops
 
+        //setup heap and run dijkstra's algorithm
+        var next = Heap(function (a, b) { return hops[a] - hops[b] })
+        next.push(to)
         _loop(g, max, hops, next)
-        //we added the edge.
-        //now check if this has brought other edges into the graph
       }
 
-    } else {
+    }
+    //handle unfollow and block (aka decrements)
+    else {
       if(!value && !_g) throw new Error('expected increment:'+value)
       var j = from, k = to, v = value, _v = g[from] && g[from][to]
+
+      //shortcut 1: detect cases that won't change the hops
       if(
-        to === start || //don't ever block self
+        to === start || //can't block yourself, so don't update hops.
         ( //already closer
           //if previous value was null, or previous didn't set the hops value anyway.
-          (_v == null  || (opts.add(hops[j], _v) !== hops[k])) &&
-          opts.min(hops[k], opts.add(hops[j], v)) === hops[k]
-        ) || ( //unchanged hops
-          //if the current value not beat this link (but this in an update to our old value)
-          //quickly check that there is another link to beat it.
-          //this catches the case when someone unfollows, but there is another path the same length.
-            hops[k] == opts.add(hops[j], _v) && 
-            hops[k] === opts.min(hops[k], opts.add(hops[j], v)) &&
+          //and the hops value will be the same, then don't update hops.
+          (_v == null  || !isUnchangedByEdge(hops, j, k, _v)) &&
+          isUnchanged(hops, j, k, v)
+        ) || ( //if this edge _did_ set the hops value, check if there is another edge which also sets it.
+          //this catches the case when someone unfollows, but there is another follow path the same length.
+            isUnchangedByEdge(hops, j, k, _v) &&
+            isUnchanged(hops, j, k, v) &&
             (function () {
               for(var _j in _g[k])
-                if(_j !== j && opts.add(hops[_j], g[_j][k]) === hops[k]) {
+                if(_j !== j && isUnchangedByEdge(hops, _j, k, g[_j][k]))
                   return true
-                }
             }())
         )
       ) {
@@ -143,42 +162,22 @@ module.exports = function (opts) {
         update_graphs(g, _g, from, to, value)
         return hops
 
-      } else if (null && hops[j] >= 0) {
+      }
+      //shortcut 2. detect cases that will add exactly 1 element to hops
+      else if (null && hops[j] >= 0) {
         //only adds the new item, but won't expand since this is a block.
         update_graphs(g2, _g2, j,k,v)
         if(opts.expand(hops[j], 3))
           hops[k] = opts.add(hops[j], v)
-      } else {
+      }
+      //the long way. calculate all hops that may be changed by this edge and recalculate them.
+      else {
 
         var next = Heap(function (a, b) {
           return hops[a] - hops[b]
         }, function (k) { return hops[k] })
 
-        //if the path removed is the edge keeping this node
-        //in the graph, then the graph will totally change.
-
-        var _value_from_us = opts.add(hops[from], g[from] && g[from][to])
-        var value_from_us = opts.add(hops[from], value)
-        if(
-          to === start || //don't ever remove self from graph
-          !opts.expand(hops[from], max) ||
-          (
-            //if the current value is the value from this branch
-            g[from] && g[from][to] === null &&
-            //this means we might be the one to bring this into the traversal
-            (
-              hops[to] !== opts.add(hops[from], value) &&
-              hops[to] === opts.min(hops[to], opts.add(hops[from], value))
-            )
-          )
-        ) {
-          update_graphs(g, _g, from, to, value)
-          return hops
-        }
-
         var maybe = exports.uncertain(g, hops, max, to)
-
-        var start = process.hrtime()
         var sources = exports.sources(_g, hops, maybe)
 
         update_graphs(g, _g, from, to, value)
@@ -205,7 +204,4 @@ module.exports = function (opts) {
 
   return exports
 }
-
-
-
 
