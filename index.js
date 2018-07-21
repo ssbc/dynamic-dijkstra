@@ -6,6 +6,10 @@ var LOG = false
 module.exports = function (opts) {
   var exports = {}
 
+  function getNewValue(hops, j, k, v) {
+    return opts.min(hops[k], opts.add(hops[j], v))
+  }
+
   //take a graph, and return it's inverse
   exports.reverse = function (g) {
     var _g = {}
@@ -24,14 +28,14 @@ module.exports = function (opts) {
 
   function _loop (g, max, hops, next) {
     while(!next.empty()) {
-      var k = next.pop()
-      if(opts.expand(hops[k], max))
-        for(var j in g[k]) {
-          var _h = opts.min(hops[j], opts.add(hops[k], g[k][j]))
+      var j = next.pop()
+      if(opts.expand(hops[j], max))
+        for(var k in g[j]) {
+          var _h = getNewValue(hops, j, k, g[j][k])
           if(isNaN(_h)) throw new Error('NaN')
-          if(_h != hops[j]) {
-            hops[j] = _h
-            next.push(j)
+          if(_h != hops[k]) {
+            hops[k] = _h
+            next.push(k)
           }
         }
     }
@@ -60,12 +64,12 @@ module.exports = function (opts) {
     })
     next.push(start)
     while(!next.empty()) {
-      var k = next.pop()
-      for(var j in g[k])
-        if(hops[j] === opts.add(hops[k], g[k][j])) {
-          if(!maybe[j]) {
-            maybe[j] = true
-            next.push(j)
+      var j = next.pop()
+      for(var k in g[j])
+        if(hops[k] === opts.add(hops[j], g[j][k])) {
+          if(!maybe[k]) {
+            maybe[k] = true
+            next.push(k)
           }
         }
     }
@@ -97,15 +101,13 @@ module.exports = function (opts) {
       update_graphs(g, _g, from, to, value)
 
       if(hops[from] == null || from == to) return hops
-      var h = opts.min(hops[to], opts.add(hops[from], value))
+      var h = getNewValue(hops, from, to, value)
 
       //if destination is max or more, do not add edge
       if(!opts.expand(hops[from], max)) return hops
 
       if(h != hops[to]) {
-        var next = Heap(function (a, b) {
-          return hops[a] - hops[b]
-        }, function (k) { return hops[k] })
+        var next = Heap(function (a, b) { return hops[a] - hops[b] })
         hops[to] = h
         next.push(to)
 
@@ -203,4 +205,7 @@ module.exports = function (opts) {
 
   return exports
 }
+
+
+
 
