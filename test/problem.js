@@ -332,3 +332,20 @@ tape('incremental remove 4', function (t) {
 })
 
 
+tape('incremental remove 5', function (t) {
+  var g =  { J: { I: 1, A: 2, B: -1, C: 2, E: 2, F: 2 },
+    A: { G: 2, D: 1, I: 1, F: 2 },
+    E: { F: 1, A: 2, B: 2, D: 1, H: 1 },
+    G: { H: 1, J: -1, A: 2, B: 1 },
+    I: { J: 1, G: 1, H: 2, E: 2, F: 1 },
+    H: { C: 1, I: 2, J: 1, A: 2 },
+    F: { D: 1, E: 2, H: 2, A: 2, G: 2 },
+    C: { I: 2, A: 0, F: 1, J: 1, H: 2, G: 2 },
+    B: { E: 2, F: 2, A: 2, C: 0, D: 1, B: -1 },
+    D: { A: 0, H: 2, E: 0 } }
+  var edge =  { from: 'H', to: 'C', value: -1 }
+
+  testIncremental(t, g, edge.from, edge.to, edge.value)
+  t.end()
+
+})
