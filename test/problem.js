@@ -64,20 +64,8 @@ tape('order', function (t) {
 
   var hops = T.traverse(g, T.reverse(g), 3, 'A')
   var _g = T.reverse(g)
-  console.log(_g.D)
   var sum = null
-  console.log('forward:', Object.keys(_g.D).reduce(function (sum, k) {
-    return opts.min(sum, opts.add(hops[k], _g.D[k]))
-  }, null))
-  console.log('reverse:', Object.keys(_g.D).reverse().reduce(function (sum, k) {
-    console.log(sum, opts.add(hops[k], _g.D[k]))
-    return opts.min(sum, opts.add(hops[k], _g.D[k]))
-  }, null))
   t.equal(opts.min(-1, 1), opts.min(1, -1))
-
-  console.log(sum)
-
-//  console.log('D', T.recalculate(T.reverse(g), 3, 'D'), 'A')
 
   t.end()
 })
@@ -88,21 +76,12 @@ tape('order2', function (t) {
     C: { B: -1 },
     A: { B: 1, C: 0 },
   }
-//  var g2 = scramble(g)
   var g2 = {
     A: { C: 0, B: 1 },
     B: { D: 1 },
     C: { B: -1 },
   }
 
-//  t.equal(
-//    T.recalculate(T.reverse(g), {A: 0, C: 0.1}, 'D'),
-//    null
-//  )
-//  t.equal(
-//    T.recalculate(T.reverse(g2), {A: 0, C: 0.1}, 'D'),
-//    null
-//  )
   t.deepEqual(
     T.traverse(g2, T.reverse(g2), 3, 'A'),
     T.traverse(g, T.reverse(g), 3, 'A')
@@ -148,18 +127,6 @@ tape('order 4', function (t) {
     }
   }
 
-//  var g2 = {
-//    C: { G: 1, E: 0 },
-////    F: { G: -1, B: 0, D: -1, C: 1, I: 0, E: 1 },
-////    I: { A: 0, D: 1, H: 1 },
-////    G: { A: 1, C: 1 },
-//    A: { B: 1, E: 0, G: -1 },
-////    B: { F: 0, B: 1, G: -1 },
-// //   D: { F: 0, G: 1, C: -1 },
-//    E: { B: -1 },
-// //   H: { A: 1 }
-//  }
-
   var g2 = scramble(g)
 
   t.deepEqual(
@@ -200,8 +167,6 @@ tape('order3', function (t) {
     T.traverse(g2, T.reverse(g2), 3, 'A'),
     T.traverse(g, T.reverse(g), 3, 'A')
   )
-
-  console.log(T.brute(g2, null, 3, 'A', 0, true))
 
   t.end()
 })
@@ -259,6 +224,28 @@ tape('remove', function (t) {
   t.end()
 })
 
+function assertUpdate(t, diff, hops_pre, hops) {
+  if(diff == null) {
+    for(var k in hops_pre)
+      t.equal(hops[k], hops_pre[k], 'key did not change')
+    for(var k in hops)
+      t.equal(hops[k], hops_pre[k], 'key did not change')
+    return
+  }
+
+  for(var k in hops_pre)
+    if(hops[k] == hops_pre[k]) {
+      t.ok(!Object.hasOwnProperty.call(diff, k), 'if no change, not present in diff')
+    }
+    else {
+      console.log('hops', diff, hops_pre, hops)
+      t.equal(diff[k], hops[k], 'diff is equal to new value:'+JSON.stringify([k, diff[k], hops[k]]))
+    }
+  for(var k in hops)
+    if(hops_pre[k] == null)
+      t.equal(diff[k], hops[k], 'diff is equal to new value after edge added')
+}
+
 function testIncremental(t, g, j,k,v) {
   var hops = T.traverse(g, null, 3, 'A')
   var _hops = T.traverse(g, null, 3, 'A')
@@ -268,12 +255,10 @@ function testIncremental(t, g, j,k,v) {
   var maybe = T.uncertain(g, hops, 3, k)
   console.log(j,k,v)
   console.log(maybe)
-//  for(var l in maybe)
-//    t.ok(hops[l] > hops[k], 'each maybe must be distance from source')
 
-  T.update(g, _g, hops, 3, 'A', j,k,v)
+  var diff = T.update(g, _g, hops, 3, 'A', j,k,v)
   t.deepEqual(hops, _hops)
-
+  assertUpdate(t, diff, _hops, hops)
 }
 
 tape('incremental remove', function (t) {
@@ -349,3 +334,4 @@ tape('incremental remove 5', function (t) {
   t.end()
 
 })
+

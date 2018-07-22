@@ -2,8 +2,14 @@ function toLetter (n) {
   return String.fromCodePoint('A'.codePointAt(0)+(n%26)) + (n > 26 ? Math.floor(n / 26) : '')
 }
 
-exports.random = function random (N, k, dist) {
+exports.arrayDist = function (dist) {
+  return function () {
+    return dist[~~(Math.random()*dist.length)]
+  }
+}
 
+exports.random = function random (N, k, dist) {
+  if(Array.isArray(dist)) dist = exports.arrayDist(dist)
   var g = {}
 
   for(var i = 0; i < N; i++) {
@@ -14,7 +20,7 @@ exports.random = function random (N, k, dist) {
       while((b = toLetter(~~(Math.random()*N))) == a)
         ;
       g[a] = g[a] || {}
-      g[a][b] = dist[~~(Math.random()*dist.length)]
+      g[a][b] = dist()//dist[~~(Math.random()*dist.length)]
     }
   }
 
