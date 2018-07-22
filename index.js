@@ -34,7 +34,8 @@ module.exports = function (opts) {
     return _g
   }
 
-  function _loop (g, max, hops, next) {
+  function _loop (g, max, hops, next, _hops) {
+    if(!_hops) throw new Error('_hops must be provided')
     while(!next.empty()) {
       var j = next.pop()
       if(opts.expand(hops[j], max))
@@ -42,12 +43,12 @@ module.exports = function (opts) {
           var _h = getNewValue(hops, j, k, g[j][k])
           if(isNaN(_h)) throw new Error('NaN')
           if(_h != hops[k]) {
-            hops[k] = _h
+            _hops[k] = hops[k] = _h
             next.push(k)
           }
         }
     }
-    return hops
+    return _hops
   }
 
   exports.traverse = exports.brute = function (g, _g, max, from) {
@@ -57,7 +58,7 @@ module.exports = function (opts) {
        return hops[a] - hops[b]
     }, function (k) { return hops[k] })
     next.push(from)
-    return _loop(g, max, hops, next)
+    return _loop(g, max, hops, next, hops)
   }
 
   //find all nodes reachable via `from` with hops at > was
@@ -103,6 +104,7 @@ module.exports = function (opts) {
   }
 
   exports.update = function (g, _g, hops, max, start, from,to,value) {
+    var _hops = {}
     if(hops[start] == null) hops[start] = opts.initial()
 
     //handle follow (aka increments)
@@ -110,23 +112,22 @@ module.exports = function (opts) {
       update_graphs(g, _g, from, to, value)
 
       //if from isn't within hops, then to won't be in hops either.
-      if(hops[from] == null || from == to) return hops
+      if(hops[from] == null || from == to) return {}
 
       var h = getNewValue(hops, from, to, value)
       //if destination is max or more, do not add edge
-      if(!opts.expand(hops[from], max)) return hops
+      if(!opts.expand(hops[from], max)) return {}
 
       if(h != hops[to]) {
-        hops[to] = h
+        _hops[to] = hops[to] = h
         //if this edge is at the limit, we are done.
-        if(!opts.expand(hops[to], max)) return hops
+        if(!opts.expand(hops[to], max)) return _hops
 
         //setup heap and run dijkstra's algorithm
         var next = Heap(function (a, b) { return hops[a] - hops[b] })
         next.push(to)
-        _loop(g, max, hops, next)
+        return _loop(g, max, hops, next, _hops)
       }
-
     }
     //handle unfollow and block (aka decrements)
     else {
@@ -154,7 +155,7 @@ module.exports = function (opts) {
       ) {
         //won't change hops, so update graph and return
         update_graphs(g, _g, from, to, value)
-        return hops
+        return null
 
       }
       //shortcut 2. detect cases that will add exactly 1 element to hops
@@ -162,11 +163,11 @@ module.exports = function (opts) {
         //only adds the new item, but won't expand since this is a block.
         update_graphs(g2, _g2, j,k,v)
         if(opts.expand(hops[j], 3))
-          hops[k] = opts.add(hops[j], v)
+          _hops[k] = hops[k] = opts.add(hops[j], v)
+        return _hops
       }
       //the long way. calculate all hops that may be changed by this edge and recalculate them.
       else {
-
         var next = Heap(function (a, b) {
           return hops[a] - hops[b]
         }, function (k) { return hops[k] })
@@ -177,27 +178,35 @@ module.exports = function (opts) {
         update_graphs(g, _g, from, to, value)
 
         sources[from] = true
-        for(var _k in maybe) delete hops[_k]
+        var pre = {}
+        for(var _k in maybe) {
+          pre[_k] = hops[_k]
+          delete hops[_k]
+        }
 
-        exports.updateAll(g, hops, max, sources)
-        return hops
+        var diff = exports.updateAll(g, hops, max, sources, _hops)
+
+        for(var k in pre)
+          if(diff[k] == pre[k])
+            delete diff[k]
+
+        return diff
       }
     }
-    return hops
-
   }
 
-  exports.updateAll = function (g, hops, max, sources) {
+  exports.updateAll = function (g, hops, max, sources, _hops) {
     var next = Heap(function (a, b) { return hops[a] - hops[b] })
 
     for(var k in sources) next.push(k)
 
-    _loop(g, max, hops, next)
-    return hops
+    return _loop(g, max, hops, next, _hops)
   }
 
   return exports
 }
+
+
 
 
 
