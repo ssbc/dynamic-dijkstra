@@ -67,12 +67,14 @@ from `start` with path length less than `max`.
 
 `_g` is the reverse of `g`. such that `g[j][k] = _g[k][j]`
 
-### traverser.update (g, _g, hops, max, start, from, to, value)
+### traverser.update (g, _g, hops, max, start, from, to, value) => diff
 
 add an edge `from->to` with weight `value` to `g` and `_g`, and update `hops` to reflect
 any changes in the shortest path. hops must be the correct shortest paths from `start`
 on the graph prior to adding the edge `from->to, value`.
 
+returns shortest path lengths that _changed_, and `{[k]: null,..}` if
+a node `k` now no longer has a shortest path less than `max`.
 
 ### Options: {min, add, initial, expand, isAdd}
 
@@ -120,4 +122,5 @@ to that blocklist by adding edge `x->l` with a weight of `0.1`.
 ## License
 
 MIT
+
 
