@@ -1,11 +1,11 @@
 {
-  "name": "traversable",
-  "description": "",
+  "name": "dynamic-dijkstra",
+  "description": "dynamic shortest path algorithim",
   "version": "1.0.0",
-  "homepage": "https://github.com/dominictarr/traversable",
+  "homepage": "https://github.com/dominictarr/dynamic-dijkstra",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dominictarr/traversable.git"
+    "url": "git://github.com/dominictarr/dynamic-dijkstra.git"
   },
   "dependencies": {
     "heap": "^0.2.6"

@@ -1,4 +1,4 @@
-# traversable
+# dynamic-dijkstra
 
 Given a weighted directed graph, calculate shortest paths from a given point,
 supports a dynamically updating graph (including both adding and removing edges)
@@ -55,7 +55,7 @@ and if `hops[s] + w == hops[m]` then we add `s`, other edges can be ignored.
 Then, we delete the current hops values for every node in the `maybe` set, and rerun dijkstra's
 algorithm from every node in the `source` set.
 
-## api: Traversable(options: Options) => traverser
+## api: DynamicDijkstra(options: Options) => traverser
 
 for given configuration options, initialize a new `traverser` object. the `options`
 defines the meaning various operations used in the algorithm.
