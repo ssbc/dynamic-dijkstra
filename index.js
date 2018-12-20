@@ -142,10 +142,13 @@ module.exports = function (opts) {
           //and the hops value will be the same, then don't update hops.
           (_v == null  || !isUnchangedByEdge(hops, j, k, _v)) &&
           isUnchanged(hops, j, k, v)
-        ) || ( //if this edge _did_ set the hops value, check if there is another edge which also sets it.
+        ) || (
+          //if this edge _did_ set the hops value, check if there is another edge which also sets it.
           //this catches the case when someone unfollows, but there is another follow path the same length.
-            isUnchangedByEdge(hops, j, k, _v) &&
+          //only applies when there was a previous edge.
+            (_v == null || isUnchangedByEdge(hops, j, k, _v)) &&
             isUnchanged(hops, j, k, v) &&
+            //quickly check if any other edges set hops
             (function () {
               for(var _j in _g[k])
                 if(_j !== j && isUnchangedByEdge(hops, _j, k, g[_j][k]))
@@ -162,7 +165,7 @@ module.exports = function (opts) {
       else if (null && hops[j] >= 0) {
         //only adds the new item, but won't expand since this is a block.
         update_graphs(g2, _g2, j,k,v)
-        if(opts.expand(hops[j], 3))
+        if(opts.expand(hops[j], 3)) //XXX is this really where the default is set?
           _hops[k] = hops[k] = opts.add(hops[j], v)
         return _hops
       }
@@ -205,7 +208,6 @@ module.exports = function (opts) {
 
   return exports
 }
-
 
 
 
