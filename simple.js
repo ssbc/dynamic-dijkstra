@@ -19,7 +19,8 @@ module.exports =  {
   },
   add: function (a, v) {
     if(a < 0) return null
-    v = v || 0.1
+    v = v === 0 ? 0.1 : v
+    if(isNaN(v)) throw new Error('edge distance must be a number, was:'+v)
     if(v >= 0) return a >= 0 ? a + v : a - v
     else       return a >= 0 ? a*-1 + v : a
   },
