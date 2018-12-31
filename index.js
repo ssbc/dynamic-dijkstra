@@ -1,7 +1,6 @@
 'use strict'
 var _Heap = require('heap')
 var Heap = function (cmp) { return new _Heap(cmp) }
-var LOG = false
 
 module.exports = function (opts) {
   var exports = {}
@@ -20,6 +19,17 @@ module.exports = function (opts) {
 
   function isUnchanged (hops, j, k, v) {
     return hops[k] === getNewValue(hops, j, k, v)
+  }
+
+  //"increment" is an edge that shortens graph distances
+  //adding a new edge always decreases hops, or decreasing
+  //the weight of an edge. (see the literature on dynamic graphs)
+  function isIncrement (value, old_value) {
+    return (
+      opts.isAdd(value) && (
+        opts.isRemove(old_value) || (opts.min(value, old_value) == value)
+      )
+    )
   }
 
   //take a graph, and return it's inverse
@@ -106,17 +116,17 @@ module.exports = function (opts) {
   exports.update = function (g, _g, hops, max, start, from,to,value) {
     var _hops = {}
     if(hops[start] == null) hops[start] = opts.initial()
-
     //handle follow (aka increments)
-    if(opts.isAdd(value)) {
+    //TODO: if number is greater, treat that is decrement
+    if(isIncrement(value, g[from] && g[from][to])) {
       update_graphs(g, _g, from, to, value)
 
       //if from isn't within hops, then to won't be in hops either.
-      if(hops[from] == null || from == to) return {}
+      if(hops[from] == null || from == to) return null
 
       var h = getNewValue(hops, from, to, value)
       //if destination is max or more, do not add edge
-      if(!opts.expand(hops[from], max)) return {}
+      if(!opts.expand(hops[from], max)) return null
 
       if(h != hops[to]) {
         _hops[to] = hops[to] = h
@@ -137,6 +147,10 @@ module.exports = function (opts) {
       //shortcut 1: detect cases that won't change the hops
       if(
         to === start || //can't block yourself, so don't update hops.
+        //if from isn't within hops, then to won't be in hops either.
+        from == to ||
+        //they are already blocked, stop tracking hops from them
+        (!opts.expand(hops[j], max)) ||
         ( //already closer
           //if previous value was null, or previous didn't set the hops value anyway.
           //and the hops value will be the same, then don't update hops.
@@ -151,7 +165,7 @@ module.exports = function (opts) {
             //quickly check if any other edges set hops
             (function () {
               for(var _j in _g[k])
-                if(_j !== j && isUnchangedByEdge(hops, _j, k, g[_j][k]))
+                if(_j !== j && hops[_j] != null && isUnchangedByEdge(hops, _j, k, g[_j][k]))
                   return true
             }())
         )
@@ -159,12 +173,12 @@ module.exports = function (opts) {
         //won't change hops, so update graph and return
         update_graphs(g, _g, from, to, value)
         return null
-
       }
       //shortcut 2. detect cases that will add exactly 1 element to hops
-      else if (null && hops[j] >= 0) {
+      //adding negative edge to someone not already in hops.
+      else if (opts.isRemove(v) && hops[j] >= 0 && hops[k] == null) {
         //only adds the new item, but won't expand since this is a block.
-        update_graphs(g2, _g2, j,k,v)
+        update_graphs(g, _g, j,k,v)
         if(opts.expand(hops[j], 3)) //XXX is this really where the default is set?
           _hops[k] = hops[k] = opts.add(hops[j], v)
         return _hops
@@ -208,7 +222,4 @@ module.exports = function (opts) {
 
   return exports
 }
-
-
-
 
