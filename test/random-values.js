@@ -24,8 +24,8 @@ function testRandom (N, K, J, seed) {
           console.log('new',  hops)
           console.log('update', update)
           console.log('brute', T.traverse(g2, _g2, 3, 'A'))
-          assert.deepEqual(hops, post_hops)
           u.assertUpdate(update, _hops, hops)
+          assert.deepEqual(hops, post_hops)
         }
     })()
   }
@@ -33,6 +33,9 @@ function testRandom (N, K, J, seed) {
 
 testRandom(3, 2, 2, 1)
 //
-//testRandom(3, 2, 2, 2)
+testRandom(3, 2, 2, 2)
+testRandom(5, 3, 2, 3)
+//testRandom(10, 5, 3, 3)
+
 
 
