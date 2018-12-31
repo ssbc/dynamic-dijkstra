@@ -60,15 +60,23 @@ module.exports = function () {
         total_decrements ++
         var _v = g2[j] && g2[j][k]
 
+        //this test checks has code that calls add(null, v)
+        //the main code doesn't do that anymore. putting
+        //this in so the tests will pass.
+        function add(a, v) {
+          if(a == null) return null
+          return opts.add(a, v)
+        }
+
         var already_closer = (
           //if previous value was null, or previous didn't set the hops value anyway.
-          (_v == null  || (opts.add(hops[j], _v) !== hops[k])) &&
-          opts.min(hops[k], opts.add(hops[j], v)) === hops[k]
+          (_v == null  || (add(hops[j], _v) !== hops[k])) &&
+          opts.min(hops[k], add(hops[j], v)) === hops[k]
         )
 
         var new_edge = hops[k] == null && hops[j] >= 0
 
-        var unchanged_hops = opts.add(hops[j], v) === hops[k]
+        var unchanged_hops = add(hops[j], v) === hops[k]
 
 
         //check that the traversals are the same

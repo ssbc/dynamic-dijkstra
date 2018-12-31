@@ -35,32 +35,12 @@ function isEmpty (o) {
   for(var k in o) return false
   return true
 }
+var assertUpdate = u.assertUpdate
 
-function assertUpdate(diff, hops_pre, hops) {
-  if(diff == null) {
-    for(var k in hops_pre)
-      assert.equal(hops[k], hops_pre[k], 'key did not change')
-    for(var k in hops)
-      assert.equal(hops[k], hops_pre[k], 'key did not change')
-    return
-  }
-
-  for(var k in hops_pre)
-    if(hops[k] == hops_pre[k]) {
-      assert.ok(!Object.hasOwnProperty.call(diff, k), 'if no change, not present in diff')
-    }
-    else {
-      assert.equal(diff[k], hops[k], 'diff is equal to new value:'+JSON.stringify([k, diff[k], hops[k]]))
-    }
-  for(var k in hops)
-    if(hops_pre[k] == null)
-      assert.equal(diff[k], hops[k], 'diff is equal to new value after edge added')
-}
 var N = 0; ts = Date.now()
 
 for(var i = 0; i < 10000;i ++) {
 //  console.log('---')
-//  if(!(i%1000)) 
   if(ts + 1000 < Date.now()) {
     console.log(i)
     ts = Date.now()
@@ -72,12 +52,9 @@ for(var i = 0; i < 10000;i ++) {
 
   var g = u.random(10, 5, [1,2])
   var g2 = u.random(5, 2, [1,0])
-  //console.log("g", g)
 
   var hops = T.traverse(g, null, 3, 'A')
   var _hops = clone(hops)
-//  console.log('hops', hops)
-//  console.log(g2)
   g4 = merge(g, {})
   ;(function () {
   var _g4 = T.reverse(g4)
@@ -88,19 +65,12 @@ for(var i = 0; i < 10000;i ++) {
       assertUpdate(update, _hops, hops)
     }
   })()
-//  console.log("g'", g2)
-//  console.log("hops'", hops)
   var g3 = merge(g, g2)
-//  console.log('g3', g3)
   equal(hops, T.traverse(g3, null, 3, 'A'))
 
   //remove an edge
-//
-//  var edge = u.randomEdge(g4)
   for(var j = 0; j < 5; j++) {
     var edge = {from: u.randomNode(g), to: u.randomNode(g)}
-//    console.log("REMOVE", edge)
-//    console.log('var g = ', g4)
     //recalculate all nodes with distance greater than what the removed edge was.
     edge.value = -1
     if(edge.to != 'A') {
@@ -124,6 +94,19 @@ for(var i = 0; i < 10000;i ++) {
   //check this is the same as a single traversal
 //  equal(hops, T.traverse(g4, null, 3, 'A'))
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
