@@ -1,4 +1,5 @@
 var u = require('./util')
+var assert = require('assert')
 var T = require('../')(require('../simple'))
 //random value between -1 and 2
 u.seed(1)
@@ -15,9 +16,15 @@ function testRandom (N, K, J, seed) {
         for(var k in g[j]) {
           var _hops = T.traverse(g2, _g2, 3, 'A')
           var v = g[j][k]
-          var update = T.update(g2, _g2, hops, 3, 'A',j, k, v)
           console.log(g2)
-          console.log(update, _hops, hops, j,k,v)
+          var update = T.update(g2, _g2, hops, 3, 'A',j, k, v)
+          var post_hops = T.traverse(g2, _g2, 3, 'A')
+          console.log({from:j,to:k,value:v})
+          console.log('old',  _hops)
+          console.log('new',  hops)
+          console.log('update', update)
+          console.log('brute', T.traverse(g2, _g2, 3, 'A'))
+          assert.deepEqual(hops, post_hops)
           u.assertUpdate(update, _hops, hops)
         }
     })()
@@ -25,5 +32,6 @@ function testRandom (N, K, J, seed) {
 }
 
 testRandom(3, 2, 2, 1)
+//
 //testRandom(3, 2, 2, 2)
 
