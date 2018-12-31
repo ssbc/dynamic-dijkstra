@@ -2,11 +2,11 @@ var u = require('./util')
 var assert = require('assert')
 var T = require('../')(require('../simple'))
 //random value between -1 and 2
-u.seed(1)
 function R () {
   return u.randomNumber()*3 - 1
 }
 function testRandom (N, K, J, seed) {
+  u.seed(seed)
   var g = u.random(N, K, R)
   var g2 = {}, _g2 = {}, hops = {}
   for(var i = 0; i < J; i++) {
@@ -34,4 +34,5 @@ function testRandom (N, K, J, seed) {
 testRandom(3, 2, 2, 1)
 //
 //testRandom(3, 2, 2, 2)
+
 
