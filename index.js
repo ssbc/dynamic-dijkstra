@@ -116,18 +116,40 @@ module.exports = function (opts) {
   exports.update = function (g, _g, hops, max, start, from,to,value) {
     var _hops = {}
     if(hops[start] == null) hops[start] = opts.initial()
-    //handle follow (aka increments)
-    //TODO: if number is greater, treat that is decrement
-    if(isIncrement(value, g[from] && g[from][to])) {
+
+    var old_value = g[from] && g[from][to]
+
+//    if(from == to) {
+//      update_graphs(g, _g, from, to, value)
+//      return null
+//    }
+//    else
+
+    if(isIncrement(value, old_value)) {
       update_graphs(g, _g, from, to, value)
 
       //if from isn't within hops, then to won't be in hops either.
       if(hops[from] == null || from == to) return null
 
+
       var h = getNewValue(hops, from, to, value)
-      //if destination is max or more, do not add edge
+      //if source is max or more, do not add edge
       if(!opts.expand(hops[from], max)) return null
 
+      //check if there is another edge that keeps this value alive.
+      if(h == hops[to] && opts.add(hops[from], old_value) == hops[to]) {
+        for(var _from in _g[to])
+          if(_from != from && opts.expand(hops[_from], max) && opts.add(hops[_from], g[_from][to]) === hops[to])
+            return null
+        var _h = null
+        for(var _from in _g[to])
+          if(hops[_from] != null && opts.expand(hops[_from], max)) {
+            _h = opts.min(_h, opts.add(hops[_from], g[_from][to]))
+          }
+        h = _h
+      }
+
+      //hops will change
       if(h != hops[to]) {
         _hops[to] = hops[to] = h
         //if this edge is at the limit, we are done.
@@ -138,6 +160,8 @@ module.exports = function (opts) {
         next.push(to)
         return _loop(g, max, hops, next, _hops)
       }
+      //undefined!
+      return null
     }
     //handle unfollow and block (aka decrements)
     else {
