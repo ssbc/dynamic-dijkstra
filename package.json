@@ -8,7 +8,8 @@
     "url": "git://github.com/dominictarr/dynamic-dijkstra.git"
   },
   "dependencies": {
-    "heap": "^0.2.6"
+    "heap": "^0.2.6",
+    "rng": "^0.2.2"
   },
   "devDependencies": {
     "deep-merge": "^1.0.0",
