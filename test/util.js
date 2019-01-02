@@ -71,7 +71,7 @@ exports.randomEdge = function (g) {
 }
 exports.randomNode = randomKey
 
-exports.assertUpdate = function assertUpdate(diff, hops_pre, hops) {
+exports.assertUpdate = function assertUpdate(diff, hops_pre, hops, after_hops) {
   if(diff == null) {
     for(var k in hops_pre)
       assert.equal(hops[k], hops_pre[k], 'key:'+k+' did not change')
@@ -90,5 +90,13 @@ exports.assertUpdate = function assertUpdate(diff, hops_pre, hops) {
   for(var k in hops)
     if(hops_pre[k] == null)
       assert.equal(diff[k], hops[k], 'diff is equal to new value after edge added')
+
+  if(after_hops) {
+    for(var k in after_hops)
+      assert.equal(hops[k], after_hops[k], 'expected '+k+'='+after_hops[k]+' but was:'+hops[k])
+    for(var k in hops)
+      if(after_hops[k] !== hops[k])
+        assert.fail('had extra field:'+k+'='+hops[k])
+  }
 }
 
