@@ -82,11 +82,6 @@ module.exports = function (opts) {
     return _hops
   }
 
-  exports.shortcut = function (g, _g, hops, max, j,k,v) {
-
-
-  }
-
   exports.traverse = exports.brute = function (g, _g, max, from) {
     var hops = {}
     hops[from] = opts.initial()
@@ -214,26 +209,6 @@ module.exports = function (opts) {
 
     var old_value = g[from] && g[from][to]
 
-//    if(from == to) {
-//      update_graphs(g, _g, from, to, value)
-//      return null
-//    }
-//    else
-
-      //if to is not currently in the graph, but it already has edges...
-//      if(hops[to] == null && g[to]) {
-//        console.log('not in graph', from, to, value, g[to])
-//
-//      }
-
-//    if(opts.isAdd(value) && old_value==null && hops[to] == null && opts.expand(hops[from], max) && g[to] != null) {
-//      update_graphs(g, _g, from, to, value)
-//      hops[to] = opts.add(hops[from], value)
-//      for(var k in g[to])
-//        update(g, _g, hops, max, start, to, k, g[to][k], _hops)
-//      return _hops
-//    }
-
     if(
       opts.isAdd(value) && old_value == null
       &&!g[to]
@@ -323,13 +298,11 @@ module.exports = function (opts) {
       }
       //the long way. calculate all hops that may be changed by this edge and recalculate them.
       else {
-//        console.log('full decrement')
         var next = Heap(function (a, b) {
           return hops[a] - hops[b]
         }, function (k) { return hops[k] })
 
         var maybe = exports.uncertain(g, hops, max, to)
-        console.log('maybe', maybe)
         var sources = exports.sources(_g, hops, maybe)
         update_graphs(g, _g, from, to, value)
 
@@ -340,10 +313,7 @@ module.exports = function (opts) {
           pre[_k] = hops[_k]
           delete hops[_k]
         }
-        console.log('sources', sources)
         var diff = exports.updateAll(g, hops, max, sources, _hops)
-        console.log('pre', pre)
-        console.log('diff', diff)
         for(var k in pre)
           if(diff[k] == pre[k])
             delete diff[k]
@@ -363,4 +333,9 @@ module.exports = function (opts) {
 
   return exports
 }
+
+
+
+
+
 
