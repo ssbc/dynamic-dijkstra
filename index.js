@@ -6,7 +6,7 @@ module.exports = function (opts) {
   var exports = {}
 
   function getValueFromEdge(hops, j, v) {
-    return opts.add(hops[j], v)
+    return hops[j] == null ? null  : opts.add(hops[j], v)
   }
 
   function getNewValue(hops, j, k, v) {
@@ -14,7 +14,7 @@ module.exports = function (opts) {
   }
 
   function isUnchangedByEdge (hops, j, k, v) {
-    return hops[k] === opts.add(hops[j], v)
+    return hops[j] != null && hops[k] === opts.add(hops[j], v)
   }
 
   function isUnchanged (hops, j, k, v) {
@@ -44,6 +44,27 @@ module.exports = function (opts) {
     return _g
   }
 
+
+
+  function expand(g, hops, max, start, update) {
+    hops = {__proto__: hops}
+    var next = Heap(function (a, b) {
+      return hops[a] - hops[b]
+    })
+    next.push(start)
+    while(!next.empty()) {
+      var j = next.pop()
+      if(opts.expand(hops[j], max)) {
+        for(let k in g[j]) {
+          var v = g[j][k]
+          var h = getNewValue(hops, j,k,v)
+          if(update(hops, k, h)) next.push(k)
+        }
+      }
+    }
+    return hops
+  }
+
   function _loop (g, max, hops, next, _hops) {
     if(!_hops) throw new Error('_hops must be provided')
     while(!next.empty()) {
@@ -61,6 +82,11 @@ module.exports = function (opts) {
     return _hops
   }
 
+  exports.shortcut = function (g, _g, hops, max, j,k,v) {
+
+
+  }
+
   exports.traverse = exports.brute = function (g, _g, max, from) {
     var hops = {}
     hops[from] = opts.initial()
@@ -69,6 +95,34 @@ module.exports = function (opts) {
     }, function (k) { return hops[k] })
     next.push(from)
     return _loop(g, max, hops, next, hops)
+  }
+
+  function def(a, b) {
+    return a == null ? b : a
+  }
+
+  exports.maybe = function (g, hops, max, start) {
+    hops = expand(g, hops, max, start, function (hops, k, h) {
+      if(h == hops[k] && !Object.hasOwnProperty.call(hops, k)) {
+        hops[k] = h
+        return true
+      }
+    })
+    hops.__proto__ = {}
+    return hops
+  }
+
+  exports.partial = function (g, hops, max, start) {
+//    console.log('partial', g, hops, max, start)
+    hops = expand(g, hops, max, start, function (hops, k, h) {
+  //    console.log(k, hops[k], h)
+      if(h !== hops[k]) {
+        hops[k] = h
+        return true
+      }
+    })
+    hops.__proto__ = {}
+    return hops
   }
 
   //find all nodes reachable via `from` with hops at > was
@@ -82,16 +136,25 @@ module.exports = function (opts) {
     next.push(start)
     while(!next.empty()) {
       var j = next.pop()
-      for(var k in g[j])
+      for(var k in g[j]) {
+        var v = g[j][k]
+        console.log(j,k, g[j])
+        if(!maybe[k])
+        console.log(j, k, v, [hops[j] != null && opts.add(hops[j], v), hops[k]])
         if(
-          isUnchangedByEdge(hops, j,k,g[j][k])
+          !maybe[k] && (
+            hops[k] == null || hops[j] == null ||
+            opts.add(hops[j], v) === opts.min(opts.add(hops[j], v), hops[k])
+            //isUnchangedByEdge(hops, j,k,g[j][k])
         //hops[k] === opts.add(hops[j], g[j][k])
+          )
         ) {
           if(!maybe[k]) {
             maybe[k] = true
             next.push(k)
           }
         }
+      }
     }
     return maybe
   }
@@ -100,7 +163,7 @@ module.exports = function (opts) {
     if(!_g) throw new Error('backlink graph must be provided')
     var update = {}
     for(var k in maybe)
-      if(hops[k])
+      if(hops[k] != null)
         for(var j in _g[k])
           if(!maybe[j] && hops[j] != null)
             update[j] = true
@@ -113,8 +176,40 @@ module.exports = function (opts) {
     g[from][to] = _g[to][from] = value
   }
 
-  exports.update = function (g, _g, hops, max, start, from,to,value) {
-    var _hops = {}
+  exports.update2 = function (g, _g, hops, max, start, from, to, value) {
+    var _hops = _hops || {}
+    if(hops[start] == null) hops[start] = opts.initial()
+
+    var next = Heap(function (a, b) {
+      return hops[a] - hops[b]
+    }, function (k) { return hops[k] })
+
+    update_graphs(g, _g, from, to, value)
+    var maybe = exports.uncertain(g, hops, max, to)
+    console.log('maybe', maybe)
+    var sources = exports.sources(_g, hops, maybe)
+    delete maybe[start]
+    //always recalculate at least `from` as source
+    sources[from] = true
+    var pre = {}
+    for(var _k in maybe) {
+      pre[_k] = hops[_k]
+      delete hops[_k]
+    }
+    console.log('sources', sources)
+    var diff = exports.updateAll(g, hops, max, sources, _hops)
+    console.log('pre', pre)
+    console.log('diff', diff)
+    for(var k in pre)
+      if(diff[k] == pre[k])
+        delete diff[k]
+
+    return diff
+
+}
+
+  exports.update = function update (g, _g, hops, max, start, from,to,value, _hops) {
+    _hops = _hops || {}
     if(hops[start] == null) hops[start] = opts.initial()
 
     var old_value = g[from] && g[from][to]
@@ -125,7 +220,25 @@ module.exports = function (opts) {
 //    }
 //    else
 
-    if(isIncrement(value, old_value)) {
+      //if to is not currently in the graph, but it already has edges...
+//      if(hops[to] == null && g[to]) {
+//        console.log('not in graph', from, to, value, g[to])
+//
+//      }
+
+//    if(opts.isAdd(value) && old_value==null && hops[to] == null && opts.expand(hops[from], max) && g[to] != null) {
+//      update_graphs(g, _g, from, to, value)
+//      hops[to] = opts.add(hops[from], value)
+//      for(var k in g[to])
+//        update(g, _g, hops, max, start, to, k, g[to][k], _hops)
+//      return _hops
+//    }
+
+    if(
+      opts.isAdd(value) && old_value == null
+      &&!g[to]
+//      isIncrement(value, old_value)
+    ) {
       update_graphs(g, _g, from, to, value)
 
       //if from isn't within hops, then to won't be in hops either.
@@ -201,6 +314,7 @@ module.exports = function (opts) {
       //shortcut 2. detect cases that will add exactly 1 element to hops
       //adding negative edge to someone not already in hops.
       else if (opts.isRemove(v) && hops[j] >= 0 && hops[k] == null) {
+  //      console.log('decrement 2')
         //only adds the new item, but won't expand since this is a block.
         update_graphs(g, _g, j,k,v)
         if(opts.expand(hops[j], 3)) //XXX is this really where the default is set?
@@ -209,24 +323,27 @@ module.exports = function (opts) {
       }
       //the long way. calculate all hops that may be changed by this edge and recalculate them.
       else {
+//        console.log('full decrement')
         var next = Heap(function (a, b) {
           return hops[a] - hops[b]
         }, function (k) { return hops[k] })
 
         var maybe = exports.uncertain(g, hops, max, to)
+        console.log('maybe', maybe)
         var sources = exports.sources(_g, hops, maybe)
-
         update_graphs(g, _g, from, to, value)
 
+        //always recalculate at least `from` as source
         sources[from] = true
         var pre = {}
         for(var _k in maybe) {
           pre[_k] = hops[_k]
           delete hops[_k]
         }
-
+        console.log('sources', sources)
         var diff = exports.updateAll(g, hops, max, sources, _hops)
-
+        console.log('pre', pre)
+        console.log('diff', diff)
         for(var k in pre)
           if(diff[k] == pre[k])
             delete diff[k]
