@@ -18,9 +18,10 @@ module.exports =  {
     return min(a, b)
   },
   add: function (a, v) {
-    if(a < 0) return null
+    if(a < 0 || v == null) return null
     v = v === 0 ? 0.1 : v
     if(isNaN(v)) throw new Error('edge distance must be a number, was:'+v)
+    if(isNaN(v + a)) throw new Error('NaN detected:'+a+', '+v)
     if(v >= 0) return a >= 0 ? a + v : a - v
     else       return a >= 0 ? a*-1 + v : a
   },
@@ -28,7 +29,7 @@ module.exports =  {
     return 0
   },
   expand: function (v, max) {
-    return v >= 0 && v < max
+    return v != null && v >= 0 && v < max
   },
   isAdd: function (v) {
     return v >= 0
@@ -37,17 +38,4 @@ module.exports =  {
     return v < 0
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
